@@ -26,12 +26,7 @@ jobs:
               exit 0
             fi
 
-            if [ "${{ github.ref_name }}" != "main" ]; then
-              echo "Skipping deployment: branch is not main"
-              exit 0
-            fi
-
-            BRANCH="${{ github.ref_name }}"
+            BRANCH="main"
 
             # Siirrytaan projektikansioon
             mkdir -p ~/movie-app
@@ -48,12 +43,10 @@ jobs:
             fi
 
             # Pysayta vanhat versiot ja rakenna frontend seka backend uudelleen
-            if ! docker compose --version >/dev/null 2>&1; then
-              echo "Docker Compose plugin is not available on the server"
-              exit 1
-            fi
-
-            docker compose down || true
-            docker compose up -d --build
-            docker compose ps
-            docker compose logs movie-backend movie-frontend movie-db || true
+            docker rm -f movie-backend movie-frontend movie-db 2>/dev/null || true
+            docker build -t movie-backend ./Backend
+            docker run -d --name movie-backend -p 5000:5000 movie-backend
+            docker build -t movie-frontend ./Frontend
+            docker run -d --name movie-frontend -p 5173:5173 movie-frontend
+            docker run -d --name movie-db -e POSTGRES_USER=movie_user -e POSTGRES_PASSWORD=movie_secure_password -e POSTGRES_DB=movie_database -p 5432:5432 postgres:16
+            docker ps
