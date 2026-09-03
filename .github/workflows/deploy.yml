@@ -48,14 +48,12 @@ jobs:
             fi
 
             # Pysayta vanhat versiot ja rakenna frontend seka backend uudelleen
-            if docker compose version >/dev/null 2>&1; then
-              docker compose down || true
-              docker compose up -d --build
-              docker compose ps
-              docker compose logs movie-backend movie-frontend movie-db || true
-            else
-              docker-compose down || true
-              docker-compose up -d --build
-              docker-compose ps
-              docker-compose logs movie-backend movie-frontend movie-db || true
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Docker Compose plugin is not available on the server"
+              exit 1
             fi
+
+            docker compose down || true
+            docker compose up -d --build
+            docker compose ps
+            docker compose logs movie-backend movie-frontend movie-db || true
