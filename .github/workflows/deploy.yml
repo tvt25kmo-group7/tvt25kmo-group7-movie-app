@@ -19,17 +19,27 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
             # Siirrytaan projektikansioon
             mkdir -p ~/movie-app
             cd ~/movie-app
 
             # Hae uusin koodi GitHubista palvelimelle
             if [ ! -d ".git" ]; then
+              rm -rf ./* ./.git 2>/dev/null || true
               git clone https://github.com/${{ github.repository }}.git .
             else
-              git pull origin main
+              git fetch origin main
+              git checkout main
+              git reset --hard origin/main
             fi
 
             # Pysayta vanhat versiot ja rakenna frontend seka backend uudelleen
-            docker compose down
-            docker compose up -d --build
+            if docker compose version >/dev/null 2>&1; then
+              docker compose down || true
+              docker compose up -d --build || true
+            else
+              docker-compose down || true
+              docker-compose up -d --build || true
+            fi
