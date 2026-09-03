@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # 1. POSTGRES-TIETOKANTA (Käyttää jo olemassa olevaa dataa voluumin kautta)
+  movie-db:
+    image: postgres:16
+    container_name: movie-db
+    restart: always
+    environment:
+      POSTGRES_USER: movie_user
+      POSTGRES_PASSWORD: movie_secure_password
+      POSTGRES_DB: movie_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_movie_data:/var/lib/postgresql/data
+
+  # 2. NODE.JS BACKEND
+  movie-backend:
+    build: ./Backend
+    container_name: movie-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - movie-db
+
+  # 3. REACT FRONTEND
+  movie-frontend:
+    build: ./Frontend
+    container_name: movie-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - movie-backend
+
+volumes:
+  postgres_movie_data:
