@@ -21,6 +21,18 @@ jobs:
           script: |
             set -e
 
+            if [ "${{ github.repository }}" != "tvt25kmo-group7/tvt25kmo-group7-movie-app" ]; then
+              echo "Skipping deployment: unexpected repository"
+              exit 0
+            fi
+
+            if [ "${{ github.ref_name }}" != "main" ]; then
+              echo "Skipping deployment: branch is not main"
+              exit 0
+            fi
+
+            BRANCH="${{ github.ref_name }}"
+
             # Siirrytaan projektikansioon
             mkdir -p ~/movie-app
             cd ~/movie-app
@@ -28,18 +40,22 @@ jobs:
             # Hae uusin koodi GitHubista palvelimelle
             if [ ! -d ".git" ]; then
               rm -rf ./* ./.git 2>/dev/null || true
-              git clone https://github.com/${{ github.repository }}.git .
+              git clone --branch "$BRANCH" --single-branch https://github.com/${{ github.repository }}.git .
             else
-              git fetch origin main
-              git checkout main
-              git reset --hard origin/main
+              git fetch origin "$BRANCH"
+              git checkout "$BRANCH"
+              git reset --hard "origin/$BRANCH"
             fi
 
             # Pysayta vanhat versiot ja rakenna frontend seka backend uudelleen
             if docker compose version >/dev/null 2>&1; then
               docker compose down || true
-              docker compose up -d --build || true
+              docker compose up -d --build
+              docker compose ps
+              docker compose logs movie-backend movie-frontend movie-db || true
             else
               docker-compose down || true
-              docker-compose up -d --build || true
+              docker-compose up -d --build
+              docker-compose ps
+              docker-compose logs movie-backend movie-frontend movie-db || true
             fi
