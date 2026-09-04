@@ -7,9 +7,9 @@ services:
     container_name: movie-db
     restart: always
     environment:
-      POSTGRES_USER: movie_user
-      POSTGRES_PASSWORD: movie_secure_password
-      POSTGRES_DB: movie_database
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
     ports:
       - "5432:5432"
     volumes:
@@ -37,3 +37,4 @@ services:
 
 volumes:
   postgres_movie_data:
+
