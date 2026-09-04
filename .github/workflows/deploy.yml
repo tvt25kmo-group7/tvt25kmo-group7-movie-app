@@ -18,6 +18,11 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DB_USER,DB_PASSWORD,DB_NAME
+          env: |
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
           script: |
             set -e
 
@@ -28,11 +33,11 @@ jobs:
 
             BRANCH="main"
 
-            # Siirrytaan projektikansioon
+            
             mkdir -p ~/movie-app
             cd ~/movie-app
 
-            # Hae uusin koodi GitHubista palvelimelle
+            
             if [ ! -d ".git" ]; then
               rm -rf ./* ./.git 2>/dev/null || true
               git clone --branch "$BRANCH" --single-branch https://github.com/${{ github.repository }}.git .
@@ -42,11 +47,22 @@ jobs:
               git reset --hard "origin/$BRANCH"
             fi
 
-            # Pysayta vanhat versiot ja rakenna frontend seka backend uudelleen
-            docker rm -f movie-backend movie-frontend movie-db 2>/dev/null || true
+            
+            docker rm -f movie-backend movie-frontend 2>/dev/null || true
             docker build -t movie-backend ./Backend
             docker run -d --name movie-backend -p 5000:5000 movie-backend
             docker build -t movie-frontend ./Frontend
             docker run -d --name movie-frontend -p 5173:5173 movie-frontend
-            docker run -d --name movie-db -e POSTGRES_USER=movie_user -e POSTGRES_PASSWORD=movie_secure_password -e POSTGRES_DB=movie_database -p 5432:5432 postgres:16
+            docker volume create postgres_movie_data >/dev/null
+            if docker container inspect movie-db >/dev/null 2>&1; then
+              docker start movie-db >/dev/null 2>&1 || true
+            else
+              docker run -d --name movie-db \
+                -e POSTGRES_USER="$DB_USER" \
+                -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+                -e POSTGRES_DB="$DB_NAME" \
+                -p 5432:5432 \
+                -v postgres_movie_data:/var/lib/postgresql/data \
+                postgres:16
+            fi
             docker ps
