@@ -56,6 +56,7 @@ In GitHub, open **Settings > Secrets and variables > Actions > New repository se
 | `DB_NAME` | Your database name |
 | `DB_USER` | Your database username |
 | `DB_PASSWORD` | The PostgreSQL password |
+| `TMDB_API_TOKEN` | TMDB api password |
 
 Keep the database password in **Secrets**, not ordinary Variables. The workflow passes these values to the VM without storing them in the source code.
 
