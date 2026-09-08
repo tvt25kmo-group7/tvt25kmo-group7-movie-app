@@ -86,17 +86,16 @@ docker volume inspect postgres_movie_data
 The deployment removes and rebuilds only the backend and frontend containers. The `movie-db` container and its `postgres_movie_data` volume are kept so existing database data remains available.
 
 
-## Git-haaroitusmalli
+## Git Branching Model
 
-- Jokaiselle Jira-tehtävälle luodaan oma lyhytikäinen branch.
-- Branch nimetään Jira-tunnuksen mukaan, esimerkiksi `SCRUM-42`.
-- Yksi task-branch saa sisältää vain yhden Jira-tehtävän muutokset.
-- Task-branch luodaan aina `integration`-branchin uusimmasta versiosta.
-- Task-branch rebasetaan uusimpaan `integration`-branchiin ennen yhdistämistä.
-- Pull Requestit `integration`-branchiin yhdistetään Squash Merge -menetelmällä.
-- Pull Requestit `integration`-branchiin eivät vaadi hyväksyntää.
-- Automaattisten tarkistusten täytyy mennä läpi ennen yhdistämistä `integration`-branchiin.
-- Task-branch poistetaan yhdistämisen jälkeen.
-- `main` on suojattu suorilta pusheilta.
-- Muutosten yhdistäminen `integration`-branchista `main`-branchiin vaatii koodin katselmoinnin ja testauksen.
-- Automaattisten tarkistusten täytyy mennä läpi ennen yhdistämistä `main`-branchiin.
+- Create a short-lived branch for each Jira item.
+- Name branches using the Jira key, for example `SCRUM-42`.
+- Each task branch must contain changes for only one Jira item.
+- Create task branches from the latest `integration` branch.
+- Rebase task branches onto the latest `integration` branch before merging.
+- Use squash merge for pull requests.
+- Pull requests into `integration` do not require approval, but automated checks must pass.
+- Delete task branches after merging.
+- Protect `main` from direct pushes.
+- Code must be reviewed and tested before merging `integration` into `main`.
+- Automated checks must pass before merging into `main`.
