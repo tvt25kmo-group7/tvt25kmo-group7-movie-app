@@ -84,3 +84,18 @@ docker volume inspect postgres_movie_data
 ```
 
 The deployment removes and rebuilds only the backend and frontend containers. The `movie-db` container and its `postgres_movie_data` volume are kept so existing database data remains available.
+
+
+## Git Branching Model
+
+- Create a short-lived branch for each Jira item.
+- Name branches using the Jira key, for example `SCRUM-42`.
+- Each task branch must contain changes for only one Jira item.
+- Create task branches from the latest `integration` branch.
+- Rebase task branches onto the latest `integration` branch before merging.
+- Use squash merge for pull requests.
+- Pull requests into `integration` do not require approval, but automated checks must pass.
+- Delete task branches after merging.
+- Protect `main` from direct pushes.
+- Code must be reviewed and tested before merging `integration` into `main`.
+- Automated checks must pass before merging into `main`.
