@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. POSTGRES-TIETOKANTA (Käyttää jo olemassa olevaa dataa voluumin kautta)
+  # 1. POSTGRES-TIETOKANTA
   movie-db:
     image: postgres:16
     container_name: movie-db
@@ -22,6 +22,8 @@ services:
     restart: always
     ports:
       - "5000:5000"
+    environment:
+      TMDB_API_TOKEN: ${TMDB_API_TOKEN:?TMDB_API_TOKEN is required}
     depends_on:
       - movie-db
 
