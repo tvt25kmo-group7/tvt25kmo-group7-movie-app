@@ -1,6 +1,7 @@
 {
   "name": "movie-backend",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "main": "index.js",
   "scripts": {
