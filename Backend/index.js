@@ -1,3 +1,7 @@
+import "dotenv/config";
+if (!process.env.TMDB_API_TOKEN) {
+  throw new Error("TMDB_API_TOKEN is not configured");
+}
 const http = require('http');
 
 const port = process.env.PORT || 5000;
