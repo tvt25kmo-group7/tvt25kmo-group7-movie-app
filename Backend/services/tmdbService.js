@@ -1,9 +1,3 @@
-/**
- * 1. Constructing the TMDB API URL
- * 2. Reading the TMDB token from an environment variable
- * 3. Sending the search request
- * 4. Transforming the response into the application’s unified data format
- */
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 const SUPPORTED_MEDIA_TYPES = ["movie", "tv"];
@@ -17,7 +11,7 @@ function normalizeSearchResult(result) {
         tmdbId: result.id,
         mediaType: result.media_type,
         title: isMovie ? result.title : result.name,
-        releaseDate: isMovie 
+        releaseDate: isMovie
             ? result.release_date || null
             : result.first_air_date || null,
         overview: result.overview || "",
@@ -37,8 +31,9 @@ async function searchMoviesAndTv(query, page = 1) {
         language: "en-US",
     });
 
+    // Construct the full search URL for the TMDB API
     const url = `${TMDB_BASE_URL}/search/multi?${searchParams.toString()}`;
-    
+
     // Send the search request to the TMDB API
     const response = await fetch(url, {
         method: "GET",
@@ -55,13 +50,19 @@ async function searchMoviesAndTv(query, page = 1) {
 
     const data = await response.json();
 
-    // Filter and normalize the search results e.g do not include actors
-    const results = data.results 
+    // Ensure that the results array exists and is an array before processing
+    if (!Array.isArray(data.results)) {
+        throw new Error(
+            "TMDB response did not contain a results array"
+        );
+    }
+    
+    // Filter out unsupported media types and normalize the remaining results
+    const results = data.results
         .filter(result => 
             SUPPORTED_MEDIA_TYPES.includes(result.media_type)
         )
-        .map(normalizeSearchResult) // normalize the search results after filtering
-        ; 
+        .map(normalizeSearchResult); // normalize the search results after filtering
 
     // Return the paginated search results along with metadata
     return {
@@ -74,22 +75,22 @@ async function searchMoviesAndTv(query, page = 1) {
 
 //nowplayingmovies is for fetching the list of movies that are currently playing in finnish theaters
 async function getNowPlayingMovies() {
-  const url =
-    'https://api.themoviedb.org/3/movie/now_playing' +
-    '?region=FI&language=fi-FI&page=1';
+    const url =
+        'https://api.themoviedb.org/3/movie/now_playing' +
+        '?region=FI&language=fi-FI&page=1';
 
-  const response = await fetch(url, {
-    headers: {
+    const response = await fetch(url, {
+        headers: {
             Authorization: `Bearer ${process.env.TMDB_API_TOKEN}`,
             accept: 'application/json'
         }
     });
 
-  if (!response.ok) {
-    throw new Error(`TMDB request failed: ${response.status}`);
-  }
+    if (!response.ok) {
+        throw new Error(`TMDB request failed: ${response.status}`);
+    }
 
-  return response.json();
+    return response.json();
 }
 
 export { getNowPlayingMovies, searchMoviesAndTv };

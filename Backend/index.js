@@ -1,15 +1,22 @@
 import "dotenv/config";
+import http from 'node:http';
+
+import { handleHealthRoute } from './routes/healthRoutes.js';
+import { handleMovieRoutes } from './routes/movieRoutes.js';
+import { handleSearchRoute } from "./routes/searchRoutes.js";
+
 if (!process.env.TMDB_API_TOKEN) {
   throw new Error("TMDB_API_TOKEN is not configured");
 }
-import http from 'node:http';
-import { handleHealthRoute } from './routes/healthRoutes.js';
-import { handleMovieRoutes } from './routes/movieRoutes.js';
 
 const port = process.env.PORT || 5000;
 
 const server = http.createServer(async (req, res) => {
   if (await handleMovieRoutes(req, res)) {
+    return;
+  }
+
+  if (await handleSearchRoute(req, res)) {
     return;
   }
 
