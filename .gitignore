@@ -1,0 +1,11 @@
+Movie-app/.env.example
+node_modules/
+.env
+.env.*
+!.env.example
+
+dist/
+coverage/
+
+dist/
+*.log

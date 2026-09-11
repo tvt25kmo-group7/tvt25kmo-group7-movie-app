@@ -73,15 +73,7 @@ After a merge or push to `main`, check the workflow in the repository's **Action
 http://<VM_PUBLIC_IP>:5173
 ```
 
-### Useful VM commands
 
-```bash
-docker ps
-docker logs movie-db
-docker logs movie-backend
-docker logs movie-frontend
-docker volume inspect postgres_movie_data
-```
 
 The deployment removes and rebuilds only the backend and frontend containers. The `movie-db` container and its `postgres_movie_data` volume are kept so existing database data remains available.
 
