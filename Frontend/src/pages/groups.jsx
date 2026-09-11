@@ -1,80 +1,100 @@
+import { useState } from 'react';
+
+import CreateGroupModal from '../components/createGroupModal';
+
+import './groups.css';
+
 export default function Groups() {
+  const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+
   return (
-    <section className="groups-page">
-      <div className="groups-header">
-        <div>
-          <h1>Movie Groups</h1>
-          <p>
-            Join groups with friends to share, watch, and rank movies together.
-          </p>
+    <>
+      <section className="groups-page">
+        <div className="groups-header">
+          <div>
+            <h1>Movie Groups</h1>
+            <p>
+              Join groups with friends to share, watch, and rank movies together.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="button-primary"
+            onClick={() => setCreateGroupModalOpen(true)}
+          >
+            + Create New Group
+          </button>
         </div>
 
-        <button type="button">
-          + Create New Group
-        </button>
-      </div>
+        <div className="groups-grid">
+          <article className="group-card">
+            <div className="group-card__header">
+              <h2>uuno turhapuurot</h2>
+              <span>12 members</span>
+            </div>
 
-      <div className="groups-grid">
-        <article className="group-card">
-          <div className="group-card__header">
-            <h2>Sci-Fi Lovers Club</h2>
-            <span>12 members</span>
-          </div>
+            <p>
+              mitäs tänne
+            </p>
 
-          <p>
-            Weekly discussions on space opera, cyber punk, and alternate histories.
-          </p>
+            <button type="button" className="button-secondary">
+              Join Group
+            </button>
+          </article>
 
-          <button type="button">
-            Join Group
-          </button>
-        </article>
+          <article className="group-card">
+            <div className="group-card__header">
+              <h2>Komedia pläjäys</h2>
+              <span>8 members</span>
+            </div>
 
-        <article className="group-card">
-          <div className="group-card__header">
-            <h2>Classic Cinema Collective</h2>
-            <span>8 members</span>
-          </div>
+            <p>
+              jotain hauskaa
+            </p>
 
-          <p>
-            Deep dives into pre-1960 masterpieces, auteur theory, and film noir.
-          </p>
+            <button type="button" className="button-secondary">
+              Join Group
+            </button>
+          </article>
 
-          <button type="button">
-            Join Group
-          </button>
-        </article>
+          <article className="group-card">
+            <div className="group-card__header">
+              <h2>Kamalaa kauhua</h2>
+              <span>4 members</span>
+            </div>
 
-        <article className="group-card">
-          <div className="group-card__header">
-            <h2>Friday Night Thrillers</h2>
-            <span>4 members</span>
-          </div>
+            <p>
+              Ei nössöille.
+            </p>
 
-          <p>
-            For the brave ones who stay psychological thrillers and midnight jumpscares.
-          </p>
+            <button type="button" className="button-secondary">
+              Join Group
+            </button>
+          </article>
 
-          <button type="button">
-            Join Group
-          </button>
-        </article>
+          <article className="group-card">
+            <div className="group-card__header">
+              <h2>Kissa videot</h2>
+              <span>6 members</span>
+            </div>
 
-        <article className="group-card">
-          <div className="group-card__header">
-            <h2>Auteur & Art-house Cinephiles</h2>
-            <span>24 members</span>
-          </div>
+            <p>
+              Hienoja kisuja ja kisuvideoita katsellaan ja jaetaan. xdd
+            </p>
 
-          <p>
-            Appreciations of surrealism, independent releases, and foreign cinema.
-          </p>
+            <button type="button" className="button-secondary">
+              Join Group
+            </button>
+          </article>
+        </div>
+      </section>
 
-          <button type="button">
-            Join Group
-          </button>
-        </article>
-      </div>
-    </section>
+      {createGroupModalOpen && (
+        <CreateGroupModal
+          onClose={() => setCreateGroupModalOpen(false)}
+        />
+      )}
+    </>
   );
 }

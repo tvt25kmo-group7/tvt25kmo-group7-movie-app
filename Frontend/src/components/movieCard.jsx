@@ -1,3 +1,4 @@
+import './movieCard.css';
 export default function MovieCard({ title }) {
   return (
     <article className="movie-card">

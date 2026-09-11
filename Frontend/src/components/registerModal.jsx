@@ -1,8 +1,15 @@
+import './modal.css';
+import './registerModal.css';
+
 export default function RegisterModal({ onClose, onOpenLogin }) {
   return (
     <div className="modal-overlay">
       <div className="register-modal">
-        <button type="button" onClick={onClose}>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+        >
           Close
         </button>
 
@@ -36,14 +43,21 @@ export default function RegisterModal({ onClose, onOpenLogin }) {
             />
           </div>
 
-          <button type="button">
+          <button
+            type="button"
+            className="button-primary"
+          >
             Create Account
           </button>
         </form>
 
         <p>
           Already have an account?{' '}
-          <button type="button" onClick={onOpenLogin}>
+          <button
+            type="button"
+            className="modal-secondary-button"
+            onClick={onOpenLogin}
+          >
             Login
           </button>
         </p>

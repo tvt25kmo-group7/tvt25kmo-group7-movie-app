@@ -1,19 +1,25 @@
 import MovieCard from '../components/movieCard';
+import './home.css';
 
 export default function Home() {
   return (
     <section className="home">
       <section className="hero">
-        <h1>Discover and Share Movies</h1>
+        <h1>Discover and Share Movies and Series</h1>
 
         <p>
-          Search for movies, save favorites and share them with your groups.
+          Search for movies and series, save favorites and share them with your groups.
         </p>
 
         <div className="search-bar">
+          <label htmlFor="home-search" className="visually-hidden">
+            Search movies and series
+          </label>
+
           <input
-            type="text"
-            placeholder="Search movies..."
+            id="home-search"
+            type="search"
+            placeholder="Search movies and series..."
           />
 
           <button type="button">
@@ -23,7 +29,7 @@ export default function Home() {
       </section>
 
       <section className="now-playing">
-        <h2>Now Playing</h2>
+        <h2>Now Playing In Theaters In Finland</h2>
 
         <div className="movie-grid">
           <MovieCard title="Movie 1" />

@@ -1,4 +1,5 @@
 import MovieCard from '../components/movieCard';
+import './searchResults.css';
 
 export default function SearchResults() {
   return (
@@ -6,9 +7,14 @@ export default function SearchResults() {
       <h1>Search Results</h1>
 
       <div className="search-bar">
+        <label htmlFor="results-search" className="visually-hidden">
+          Search movies and series
+        </label>
+
         <input
-          type="text"
-          placeholder="Search movies..."
+          id="results-search"
+          type="search"
+          placeholder="Search movies and series..."
         />
 
         <button type="button">

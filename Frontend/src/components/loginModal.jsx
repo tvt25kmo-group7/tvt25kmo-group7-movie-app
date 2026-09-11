@@ -1,8 +1,16 @@
+import './loginModal.css';
+import './modal.css';
+
 export default function LoginModal({ onClose, onOpenRegister }) {
   return (
     <div className="modal-overlay">
       <div className="login-modal">
-        <button type="button" onClick={onClose}>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close login"
+        >
           Close
         </button>
 
@@ -27,14 +35,17 @@ export default function LoginModal({ onClose, onOpenRegister }) {
             />
           </div>
 
-          <button type="button">
+          <button type="button" className="button-primary">
             Login
           </button>
         </form>
 
         <p>
           Don't have an account?{' '}
-          <button type="button" onClick={onOpenRegister}>
+          <button 
+          type="button"
+           className="modal-secondary-button"
+           onClick={onOpenRegister}>
             Register
           </button>
         </p>

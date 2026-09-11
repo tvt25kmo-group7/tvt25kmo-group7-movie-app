@@ -1,0 +1,41 @@
+.create-group-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+
+.create-group-modal h2 {
+  margin-top: 0;
+}
+
+.create-group-modal p {
+  color: var(--color-text-muted);
+}
+
+.create-group-modal label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.create-group-modal input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+}
+
+.create-group-modal .button-primary {
+  width: 100%;
+}
