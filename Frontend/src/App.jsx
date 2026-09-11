@@ -1,10 +1,30 @@
 import './styles.css';
+import { Routes, Route } from 'react-router-dom';
+
+import Navbar from './components/navBar';
+import Home from './pages/home';
+import SearchResults from './pages/searchResults';
+import NotFound from './pages/notFound';
+import MovieDetails from './pages/movieDetails';
+import Groups from './pages/groups';
+import Favorites from './pages/favorites';
+
 
 function App() {
   return (
     <div className="app">
-      <h1>Movie App</h1>
-      <p>React is now running in Docker.</p>
+      <Navbar />
+
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<SearchResults />} />
+          <Route path="/movie/:id" element={<MovieDetails />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
     </div>
   );
 }
