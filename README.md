@@ -75,9 +75,6 @@ http://<VM_PUBLIC_IP>:5173
 
 
 
-The deployment removes and rebuilds only the backend and frontend containers. The `movie-db` container and its `postgres_movie_data` volume are kept so existing database data remains available.
-
-
 ## Git Branching Model
 
 - Create a short-lived branch for each Jira item.
