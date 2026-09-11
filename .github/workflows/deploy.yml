@@ -14,15 +14,16 @@ jobs:
 
       - name: Deploy to Ubuntu Server via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: DB_USER,DB_PASSWORD,DB_NAME
-          env: |
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_NAME=${{ secrets.DB_NAME }}
+          envs: DB_USER,DB_PASSWORD,DB_NAME,TMDB_API_TOKEN
           script: |
             set -e
 
@@ -50,7 +51,11 @@ jobs:
             
             docker rm -f movie-backend movie-frontend 2>/dev/null || true
             docker build -t movie-backend ./Backend
-            docker run -d --name movie-backend -p 5000:5000 movie-backend
+            docker run -d \
+              --name movie-backend \
+              -p 5000:5000 \
+              -e TMDB_API_TOKEN="$TMDB_API_TOKEN" \
+              movie-backend
             docker build -t movie-frontend ./Frontend
             docker run -d --name movie-frontend -p 5173:5173 movie-frontend
             docker volume create postgres_movie_data >/dev/null
