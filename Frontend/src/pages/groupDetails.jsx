@@ -1,4 +1,5 @@
 import MovieCard from '../components/movieCard';
+import './groupDetails.css';
 
 export default function GroupDetails() {
   return (
@@ -7,30 +8,46 @@ export default function GroupDetails() {
         <h1>Sci-Fi Lovers Club</h1>
         <p>Created October 2023 · 1 Active Members</p>
 
-        <button type="button">
+        <button type="button" className="button-secondary">
           Delete Group
         </button>
 
-        <section>
+        <section className="group-members">
           <h2>Members & Requests</h2>
 
           <h3>Join Requests (2)</h3>
 
-          <div>
+          <div className="join-request">
             <span>@Jani</span>
-            <button type="button">Accept</button>
-            <button type="button">Reject</button>
+
+            <div className="join-request__actions">
+              <button type="button" className="button-primary">
+                Accept
+              </button>
+
+              <button type="button" className="button-secondary">
+                Reject
+              </button>
+            </div>
           </div>
 
-          <div>
+          <div className="join-request">
             <span>@Marianna</span>
-            <button type="button">Accept</button>
-            <button type="button">Reject</button>
+
+            <div className="join-request__actions">
+              <button type="button" className="button-primary">
+                Accept
+              </button>
+
+              <button type="button" className="button-secondary">
+                Reject
+              </button>
+            </div>
           </div>
 
           <h3>Current Members</h3>
 
-          <div>
+          <div className="current-member">
             <span>@Joona</span>
             <span>Admin</span>
           </div>

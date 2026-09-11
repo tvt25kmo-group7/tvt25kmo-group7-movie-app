@@ -1,0 +1,135 @@
+.profile-page {
+  width: 100%;
+  color: var(--color-text);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.profile-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.profile-header p {
+  margin-top: 0;
+  color: var(--color-text-muted);
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.profile-left {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-card {
+  padding: 1.5rem;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
+
+.profile-card h2 {
+  margin-top: 0;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+
+  margin-bottom: 1.5rem;
+}
+
+.profile-stat {
+  display: grid;
+  gap: 0.25rem;
+
+  padding: 0.75rem 0.5rem;
+
+  text-align: left;
+
+  background: transparent;
+  color: var(--color-text);
+
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+}
+
+.profile-stat strong {
+  font-size: 1.25rem;
+}
+
+.profile-stat span {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.profile-stat:hover {
+  background: var(--color-surface-secondary);
+}
+
+.profile-stat--active {
+  border-color: var(--color-primary);
+  background: var(--color-surface-secondary);
+}
+
+.profile-member {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  padding-top: 1rem;
+
+  border-top: 1px solid var(--color-border);
+}
+
+.profile-account-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+}
+
+.profile-content-panel {
+  min-height: 360px;
+  padding: 1.5rem;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
+
+.profile-content-panel h2 {
+  margin-top: 0;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+  }
+
+  .profile-header button {
+    width: 100%;
+  }
+
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-account-row {
+    flex-direction: column;
+  }
+}
