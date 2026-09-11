@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
 import LoginModal from './loginModal';
+import RegisterModal from './registerModal';
 
 export default function Navbar() {
-  const [showLogin, setShowLogin] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
 
   return (
     <>
@@ -20,7 +22,7 @@ export default function Navbar() {
 
             <button
               type="button"
-              onClick={() => setShowLogin(true)}
+              onClick={() => setActiveModal('login')}
             >
               Login
             </button>
@@ -28,8 +30,18 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {showLogin && (
-        <LoginModal onClose={() => setShowLogin(false)} />
+      {activeModal === 'login' && (
+        <LoginModal
+          onClose={() => setActiveModal(null)}
+          onOpenRegister={() => setActiveModal('register')}
+        />
+      )}
+
+      {activeModal === 'register' && (
+        <RegisterModal
+          onClose={() => setActiveModal(null)}
+          onOpenLogin={() => setActiveModal('login')}
+        />
       )}
     </>
   );

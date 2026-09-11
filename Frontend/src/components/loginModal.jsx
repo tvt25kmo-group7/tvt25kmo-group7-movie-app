@@ -1,11 +1,8 @@
-export default function LoginModal({ onClose }) {
+export default function LoginModal({ onClose, onOpenRegister }) {
   return (
     <div className="modal-overlay">
       <div className="login-modal">
-        <button
-          type="button"
-          onClick={onClose}
-        >
+        <button type="button" onClick={onClose}>
           Close
         </button>
 
@@ -14,7 +11,6 @@ export default function LoginModal({ onClose }) {
         <form>
           <div>
             <label htmlFor="login-email">Email</label>
-
             <input
               id="login-email"
               type="email"
@@ -24,7 +20,6 @@ export default function LoginModal({ onClose }) {
 
           <div>
             <label htmlFor="login-password">Password</label>
-
             <input
               id="login-password"
               type="password"
@@ -36,6 +31,13 @@ export default function LoginModal({ onClose }) {
             Login
           </button>
         </form>
+
+        <p>
+          Don't have an account?{' '}
+          <button type="button" onClick={onOpenRegister}>
+            Register
+          </button>
+        </p>
       </div>
     </div>
   );

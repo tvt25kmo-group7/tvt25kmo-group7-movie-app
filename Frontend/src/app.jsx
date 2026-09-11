@@ -8,6 +8,8 @@ import NotFound from './pages/notFound';
 import MovieDetails from './pages/movieDetails';
 import Groups from './pages/groups';
 import Favorites from './pages/favorites';
+import GroupDetails from './pages/groupDetails';
+import Profile from './pages/profile';
 
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
           <Route path="/movie/:id" element={<MovieDetails />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/groups/:id" element={<GroupDetails />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
