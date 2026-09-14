@@ -1,4 +1,7 @@
-import { searchMoviesAndTv } from "../services/tmdbService.js";
+import {
+    searchMoviesAndTv,
+    searchMoviesAndTvCriteria,
+} from "../services/tmdbService.js";
 
 //  Utility function to send JSON responses with appropriate headers and status codes
 function sendJson(res, statusCode, body, headers = {}) {
@@ -16,8 +19,10 @@ export async function handleSearchRoute(req, res) {
         `http://${req.headers.host || "localhost"}`,
     );
 
-    // This handler only handles the /api/search path
-    if (requestUrl.pathname !== "/api/search") {
+    const isCriteriaSearch = requestUrl.pathname === "/api/search/criteria";
+
+    // This handler supports the normal name search and the isolated criteria test route.
+    if (requestUrl.pathname !== "/api/search" && !isCriteriaSearch) {
         return false;
     }
 
@@ -37,8 +42,17 @@ export async function handleSearchRoute(req, res) {
     const page = Number(requestUrl.searchParams.get("page") ?? "1");
 
     // Validate the search query and page number before proceeding
-    if (!query) {
+    if (!isCriteriaSearch && !query) {
         sendJson(res, 400, { error: "Search query is required" });
+        return true;
+    }
+
+    if (isCriteriaSearch && !query && !requestUrl.searchParams.get("genre")
+        && !requestUrl.searchParams.get("mediaType")
+        && !requestUrl.searchParams.get("year")
+        && !requestUrl.searchParams.get("yearFrom")
+        && !requestUrl.searchParams.get("yearTo")) {
+        sendJson(res, 400, { error: "At least one search criterion is required" });
         return true;
     }
 
@@ -50,7 +64,15 @@ export async function handleSearchRoute(req, res) {
 
     // Perform the search using the TMDB service and handle any errors.
     try {
-        const searchResults = await searchMoviesAndTv(query, page);
+        const searchResults = isCriteriaSearch
+            ? await searchMoviesAndTvCriteria({
+                genre: requestUrl.searchParams.get("genre") ?? undefined,
+                mediaType: requestUrl.searchParams.get("mediaType") ?? undefined,
+                year: requestUrl.searchParams.get("year") ?? undefined,
+                yearFrom: requestUrl.searchParams.get("yearFrom") ?? undefined,
+                yearTo: requestUrl.searchParams.get("yearTo") ?? undefined,
+            }, page)
+            : await searchMoviesAndTv(query, page);
         sendJson(res, 200, searchResults);
     } catch (error) {
         console.error("TMDB search failed:", error.message);
