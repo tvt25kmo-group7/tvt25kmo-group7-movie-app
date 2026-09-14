@@ -5,7 +5,7 @@ export default function GroupDetails() {
   return (
     <section className="group-details-page">
       <aside className="group-details-sidebar">
-        <h1>Sci-Fi Lovers Club</h1>
+        <h1>ryhmän nimi</h1>
         <p>Created October 2023 · 1 Active Members</p>
 
         <button type="button" className="button-secondary">
@@ -58,7 +58,7 @@ export default function GroupDetails() {
         <h2>Shared Movie Playlist</h2>
 
         <p>
-          These are the titles planned for upcoming group watch sessions.
+          
         </p>
 
         <div className="movie-grid">
