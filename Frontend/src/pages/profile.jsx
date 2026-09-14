@@ -28,7 +28,7 @@ export default function Profile() {
                 className={`profile-stat ${activeSection === 'rated' ? 'profile-stat--active' : ''}`}
                 onClick={() => setActiveSection('rated')}
               >
-                <strong>128</strong>
+                <strong>15</strong>
                 <span>Rated titles</span>
               </button>
 
@@ -37,7 +37,7 @@ export default function Profile() {
                 className={`profile-stat ${activeSection === 'favorites' ? 'profile-stat--active' : ''}`}
                 onClick={() => setActiveSection('favorites')}
               >
-                <strong>36</strong>
+                <strong>8</strong>
                 <span>Favorites</span>
               </button>
 
@@ -68,6 +68,7 @@ export default function Profile() {
             <button type="button" className="button-secondary">
               Delete Account
             </button>
+            
           </section>
         </div>
 
