@@ -1,0 +1,24 @@
+.movie-card {
+  min-height: 260px;
+  padding: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-text);
+}
+
+.movie-card__poster {
+  min-height: 220px;
+  margin-bottom: 1rem;
+
+  display: grid;
+  place-items: center;
+
+  background: var(--color-surface-secondary);
+  border-radius: 0.5rem;
+  color: var(--color-text-muted);
+}
+
+.movie-card h3 {
+  margin: 0;
+}

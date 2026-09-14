@@ -1,0 +1,46 @@
+.register-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+
+.register-modal h2 {
+  margin-top: 0;
+}
+
+.register-modal form {
+  display: grid;
+  gap: 1rem;
+}
+
+.register-modal form div {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.register-modal input {
+  width: 100%;
+  padding: 0.75rem;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+}
+
+.register-modal form button {
+  padding: 0.75rem;
+
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+
+  border: 1px solid var(--color-primary);
+}

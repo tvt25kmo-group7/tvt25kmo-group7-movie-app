@@ -1,0 +1,50 @@
+.share-group-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+
+.share-group-modal h2 {
+  margin-top: 0;
+}
+
+.share-group-modal p {
+  color: var(--color-text-muted);
+}
+
+.share-group-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.share-group-list button {
+  width: 100%;
+  padding: 0.75rem;
+
+  text-align: left;
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.share-group-list button:hover {
+  background: var(--color-surface-secondary);
+}
+
+.share-group-modal > .button-primary,
+.share-group-modal > .button-secondary {
+  width: 100%;
+  margin-top: 0.75rem;
+}
