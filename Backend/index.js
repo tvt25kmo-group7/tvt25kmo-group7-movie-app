@@ -13,9 +13,26 @@ if (!process.env.TMDB_API_TOKEN) {
 const port = process.env.PORT || 5000;
 
 const server = http.createServer(async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (await handleUserRoutes(req, res)) {
     return;
   }
+
   if (await handleMovieRoutes(req, res)) {
     return;
   }
