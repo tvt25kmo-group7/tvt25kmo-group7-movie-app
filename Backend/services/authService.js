@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { findUserByEmail } from '../models/userModel.js';
 import { createToken } from '../auth/jwt.js';
 
