@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import pool from '../database.js';
 
 async function findUserByEmail(email) {
   const result = await pool.query(
