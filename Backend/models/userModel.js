@@ -1,7 +1,7 @@
-import pool from '../database.js';
+import { database } from '../services/database.js';
 
 async function findUserByEmail(email) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       SELECT id, email, username, password_hash
       FROM users
