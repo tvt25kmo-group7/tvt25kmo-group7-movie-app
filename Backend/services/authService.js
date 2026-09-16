@@ -9,10 +9,7 @@ async function loginUser(email, password) {
     return null;
   }
 
-  const passwordMatches = await bcrypt.compare(
-    password,
-    user.password_hash
-  );
+  const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
   if (!passwordMatches) {
     return null;
