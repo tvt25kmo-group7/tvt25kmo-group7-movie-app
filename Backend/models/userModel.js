@@ -1,8 +1,8 @@
-import pool from '../db.js';
+import { database } from '../services/database.js';
 
 // Finds an existing account by email for login and registration checks.
 async function findUserByEmail(email) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       SELECT id, email, username, password_hash
       FROM users
