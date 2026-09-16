@@ -23,6 +23,7 @@ Set the database variables before starting Docker Compose:
 export DB_NAME=<your_database_name>
 export DB_USER=<your_database_user>
 export DB_PASSWORD=<your_database_password>
+export JWT_SECRET_KEY=<your_random_jwt_secret>
 docker compose up -d --build
 ```
 
@@ -32,6 +33,7 @@ On PowerShell, use:
 $env:DB_NAME = "<your_database_name>"
 $env:DB_USER = "<your_database_user>"
 $env:DB_PASSWORD = "<your_database_password>"
+$env:JWT_SECRET_KEY = "<your_random_jwt_secret>"
 docker compose up -d --build
 ```
 

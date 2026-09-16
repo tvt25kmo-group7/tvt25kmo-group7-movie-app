@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 const { sign, verify } = jwt;
 
@@ -10,7 +10,7 @@ function createToken(user) {
     },
     process.env.JWT_SECRET_KEY,
     {
-      expiresIn: '1h',
+      expiresIn: "1h",
     },
   );
 }
@@ -19,7 +19,4 @@ function verifyToken(token) {
   return verify(token, process.env.JWT_SECRET_KEY);
 }
 
-export {
-  createToken,
-  verifyToken,
-};
+export { createToken, verifyToken };
