@@ -1,10 +1,21 @@
 import "dotenv/config";
+import server from "./app.js";
+if (!process.env.TMDB_API_TOKEN) {
+  throw new Error("TMDB_API_TOKEN is not configured");
+}
+const port = process.env.PORT || 5000;
+server.listen(port, () => {
+  console.log(`Backend listening on port ${port}`);
+});
+
+/*import "dotenv/config";
 import http from 'node:http';
 
 import { handleHealthRoute } from './routes/healthRoutes.js';
 import { handleMovieRoutes } from './routes/movieRoutes.js';
 import { handleSearchRoute } from "./routes/searchRoutes.js";
 import { handleUserRoutes } from './routes/userRoutes.js';
+import { database } from './services/database.js';
 
 if (!process.env.TMDB_API_TOKEN) {
   throw new Error("TMDB_API_TOKEN is not configured");
@@ -29,7 +40,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (await handleUserRoutes(req, res)) {
+  if (await handleUserRoutes(req, res, database)) {
     return;
   }
 
@@ -52,3 +63,4 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
 });
+*/

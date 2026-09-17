@@ -6,5 +6,9 @@
   "scripts": {
     "test": "NODE_ENV=test jest --runInBand",
     "test:watch": "NODE_ENV=test jest --watch"
+  },
+  "allowScripts": {
+    "@parcel/watcher": true,
+    "unrs-resolver": true
   }
 }
