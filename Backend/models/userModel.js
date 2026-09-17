@@ -1,4 +1,4 @@
-import { database } from '../services/database.js';
+import { database } from "../services/database.js";
 
 // Finds an existing account by email for login and registration checks.
 async function findUserByEmail(email) {
@@ -8,7 +8,7 @@ async function findUserByEmail(email) {
       FROM users
       WHERE email = $1
     `,
-    [email]
+    [email],
   );
 
   return result.rows[0] || null;
@@ -16,13 +16,13 @@ async function findUserByEmail(email) {
 
 // Finds an existing account by username during registration.
 async function findUserByUsername(username) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       SELECT id, email, username
       FROM users
       WHERE username = $1
     `,
-    [username]
+    [username],
   );
 
   return result.rows[0] || null;
@@ -30,13 +30,13 @@ async function findUserByUsername(username) {
 
 // Inserts a new account using parameters to keep user input separate from SQL.
 async function createUser(email, username, passwordHash) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       INSERT INTO users (email, username, password_hash)
       VALUES ($1, $2, $3)
       RETURNING id, email, username
     `,
-    [email, username, passwordHash]
+    [email, username, passwordHash],
   );
 
   return result.rows[0] || null;
