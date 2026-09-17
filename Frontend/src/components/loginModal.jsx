@@ -1,9 +1,11 @@
 import { useState } from 'react';
-
+import { useAuth } from '../context/AuthContext';
 import './loginModal.css';
 import './modal.css';
 
 export default function LoginModal({ onClose, onOpenRegister }) {
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,7 +36,7 @@ export default function LoginModal({ onClose, onOpenRegister }) {
         return;
       }
 
-      sessionStorage.setItem('user', JSON.stringify(data));
+      login(data);
 
       onClose();
     } catch (error) {
