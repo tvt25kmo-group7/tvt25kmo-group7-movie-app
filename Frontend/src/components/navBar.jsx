@@ -1,13 +1,14 @@
 import './navBar.css';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import LoginModal from './loginModal';
 import RegisterModal from './registerModal';
 
 export default function Navbar() {
    const { user, logout } = useAuth();
+   const navigate = useNavigate();
 
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function Navbar() {
   function handleLogout() {
   logout();
   closeMenu();
+  navigate('/');
 }
 
  return (
