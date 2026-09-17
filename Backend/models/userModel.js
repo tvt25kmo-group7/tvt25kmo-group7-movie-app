@@ -16,7 +16,7 @@ async function findUserByEmail(email) {
 
 // Finds an existing account by username during registration.
 async function findUserByUsername(username) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       SELECT id, email, username
       FROM users
@@ -30,7 +30,7 @@ async function findUserByUsername(username) {
 
 // Inserts a new account using parameters to keep user input separate from SQL.
 async function createUser(email, username, passwordHash) {
-  const result = await pool.query(
+  const result = await database.query(
     `
       INSERT INTO users (email, username, password_hash)
       VALUES ($1, $2, $3)
