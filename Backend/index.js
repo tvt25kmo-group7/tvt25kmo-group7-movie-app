@@ -1,4 +1,14 @@
 import "dotenv/config";
+import server from "./app.js";
+if (!process.env.TMDB_API_TOKEN) {
+  throw new Error("TMDB_API_TOKEN is not configured");
+}
+const port = process.env.PORT || 5000;
+server.listen(port, () => {
+  console.log(`Backend listening on port ${port}`);
+});
+
+/*import "dotenv/config";
 import http from 'node:http';
 
 import { handleHealthRoute } from './routes/healthRoutes.js';
@@ -53,3 +63,4 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
 });
+*/

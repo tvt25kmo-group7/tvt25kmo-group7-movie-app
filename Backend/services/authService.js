@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
-import { createToken } from "../auth/jwt.js";
 import {
   createUser,
   findUserByEmail,
   findUserByUsername,
 } from "../models/userModel.js";
+import { createToken } from "../auth/jwt.js";
 
 async function loginUser(email, password) {
   const user = await findUserByEmail(email);
