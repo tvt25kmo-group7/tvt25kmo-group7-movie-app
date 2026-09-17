@@ -1,6 +1,10 @@
-import bcrypt from 'bcryptjs';
-import { findUserByEmail } from '../models/userModel.js';
-import { createToken } from '../auth/jwt.js';
+import bcrypt from "bcryptjs";
+import { createToken } from "../auth/jwt.js";
+import {
+  createUser,
+  findUserByEmail,
+  findUserByUsername,
+} from "../models/userModel.js";
 
 async function loginUser(email, password) {
   const user = await findUserByEmail(email);
@@ -27,8 +31,12 @@ async function loginUser(email, password) {
 
 // Validates registration data, creates the account, and returns a login token.
 async function registerUser(email, username, password) {
-  if (typeof email !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
-    throw new Error('Email, username, and password are required');
+  if (
+    typeof email !== "string" ||
+    typeof username !== "string" ||
+    typeof password !== "string"
+  ) {
+    throw new Error("Email, username, and password are required");
   }
 
   // Normalize values before validation and database queries.
@@ -37,15 +45,23 @@ async function registerUser(email, username, password) {
 
   // Check the basic format and length rules for each field.
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    throw new Error('Invalid email address');
+    throw new Error("Invalid email address");
   }
 
   if (!/^[a-zA-Z0-9_]{3,30}$/.test(cleanUsername)) {
-    throw new Error('Username must be 3-30 characters and use only letters, numbers, or underscores');
+    throw new Error(
+      "Username must be 3-30 characters and use only letters, numbers, or underscores",
+    );
   }
 
-  if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-    throw new Error('Password must be at least 8 characters and contain an uppercase letter and a number');
+  if (
+    password.length < 8 ||
+    !/[A-Z]/.test(password) ||
+    !/[0-9]/.test(password)
+  ) {
+    throw new Error(
+      "Password must be at least 8 characters and contain an uppercase letter and a number",
+    );
   }
 
   try {
@@ -53,12 +69,12 @@ async function registerUser(email, username, password) {
     // still protect against two simultaneous registration requests.
     const existingEmail = await findUserByEmail(cleanEmail);
     if (existingEmail) {
-      throw new Error('Email is already registered');
+      throw new Error("Email is already registered");
     }
 
     const existingUsername = await findUserByUsername(cleanUsername);
     if (existingUsername) {
-      throw new Error('Username is already taken');
+      throw new Error("Username is already taken");
     }
 
     // Store only the bcrypt hash, never the original password.
@@ -72,12 +88,12 @@ async function registerUser(email, username, password) {
       token: createToken(newUser),
     };
   } catch (error) {
-    if (error.code === '23505') {
-      if (error.constraint?.includes('username')) {
-        throw new Error('Username is already taken');
+    if (error.code === "23505") {
+      if (error.constraint?.includes("username")) {
+        throw new Error("Username is already taken");
       }
 
-      throw new Error('Email is already registered');
+      throw new Error("Email is already registered");
     }
 
     throw error;
