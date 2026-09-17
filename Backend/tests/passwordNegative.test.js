@@ -1,12 +1,12 @@
 import request from "supertest";
 import server from "../app.js";
 
-describe("User registration", () => {
+describe("User registration with invalid passwords", () => {
   test.each([
-    ['Pass1'],//too short password
-    ['pass12345'],//no capital
-    ['Passwordone'],//no number
-  ])('Invalid password: %s', async (password) => {
+    {password: 'Pass1', reason: 'too short password'},
+    {password: 'passwordone1', reason: 'no capital'},
+    {password: 'Passwordone', reason: 'no number'},
+  ])('Invalid password: $password ($reason)', async ({password, reason}) => {
     const uniqueValue = Date.now();
 
     const newUser = {
@@ -19,7 +19,7 @@ describe("User registration", () => {
       .post('/api/users/register')
       .send(newUser);
 
-      console.log(response.status, response.body);
+      console.log({password, reason, status: response.status, body: response.body});
 
     expect(response.status).toBe(400);
 
