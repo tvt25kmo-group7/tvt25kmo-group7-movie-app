@@ -6,6 +6,6 @@ dist/
 !.env.example
 
 coverage/
-
+Backend/.env
 *.log
 eslint.config.js

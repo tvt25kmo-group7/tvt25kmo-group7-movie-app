@@ -42,4 +42,3 @@ export async function deleteUserById(userId, pool) {
   } finally {
     client.release();
   }
-}

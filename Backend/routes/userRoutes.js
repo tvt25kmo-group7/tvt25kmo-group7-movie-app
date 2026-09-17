@@ -1,5 +1,6 @@
 // User authentication and account management routes.
 
+import { authenticateRequest } from '../auth/auth.js';
 import { loginUser, registerUser } from '../services/authService.js';
 import { deleteUserById } from '../services/userService.js';
 
@@ -176,11 +177,7 @@ async function handleDeleteMe(req, res, pool) {
     return true;
   }
 
-  if (!req.user?.id) {
-    sendJson(res, 401, {
-      error: 'You must be signed in to delete your account',
-    });
-
+  if (!authenticateRequest(req, res)) {
     return true;
   }
 
