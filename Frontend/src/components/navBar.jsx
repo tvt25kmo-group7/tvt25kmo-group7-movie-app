@@ -17,11 +17,16 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
-  function handleLogout() {
-  logout();
-  closeMenu();
-  navigate('/');
-}
+  async function handleLogout() {
+    const success = await logout();
+
+    if (!success) {
+      console.warn('Backend logout failed; local session was cleared');
+    }
+
+    closeMenu();
+    navigate('/');
+  }
 
  return (
     <>
