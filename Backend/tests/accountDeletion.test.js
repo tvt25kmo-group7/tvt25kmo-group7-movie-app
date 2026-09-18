@@ -1,4 +1,6 @@
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
+
 import { createServer } from '../app.js';
 import { createToken } from '../auth/jwt.js';
 import { deleteUserById } from '../services/userService.js';
@@ -112,7 +114,7 @@ describe('DELETE /api/users/me', () => {
   test('returns 204 when the authenticated user is deleted', async () => {
     process.env.JWT_SECRET_KEY = 'account-del-test-key';
 
-    const { pool } = createTestPool();
+    const { pool, queries } = createTestPool();
     const server = createServer(pool);
     const token = createToken({
       id: 42,
@@ -125,5 +127,118 @@ describe('DELETE /api/users/me', () => {
 
     expect(response.status).toBe(204);
     expect(response.body).toEqual({});
+    expect(queries[1].values).toEqual([42]);
+  });
+
+  test('returns 404 when the authenticated user is not found', async () => {
+    process.env.JWT_SECRET_KEY = 'account-del-test-key';
+
+    const { pool } = createTestPool({ rowCount: 0 });
+    const server = createServer(pool);
+    const token = createToken({
+      id: 42,
+      email: 'user@example.com',
+    });
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'User account not found',
+    });
+  });
+
+  test('returns 401 when the authorization token is missing', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server).delete('/api/users/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Authentication required',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 401 when the authorization token is invalid', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer invalid-token`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Invalid or expired token',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 401 when the authorization toke is expired', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+    const token = jwt.sign(
+      {
+        id: 42,
+        email: 'user@example.com',
+      },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: '-1s',
+      },
+    );
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Invalid or expired token',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 405 when the HTTP method is not DELETE', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server).get('/api/users/me');
+
+    expect(response.status).toBe(405);
+    expect(response.headers.allow).toBe('DELETE');
+    expect(response.body).toEqual({
+      error: 'This action requires a DELETE request',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 500 when account deletion fails', async () => {
+    process.env.JWT_SECRET_KEY = 'account-del-test-key';
+
+    const { pool, queries, wasReleased } = createTestPool({
+      deleteError: new Error('Database error'),
+    });
+    const server = createServer(pool);
+    const token = createToken({
+      id: 42,
+      email: 'user@example.com',
+    });
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: 'Unable to delete the account',
+    });
+
+    expect(queries[2].text).toBe('ROLLBACK');
+    expect(wasReleased()).toBe(true);
   });
 });

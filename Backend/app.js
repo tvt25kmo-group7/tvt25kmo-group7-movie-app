@@ -10,6 +10,7 @@ import { database } from './services/database.js';
 function createServer(pool = database) {
   return http.createServer(async (req, res) => {
     try {
+
       res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
       res.setHeader(
         'Access-Control-Allow-Methods',
@@ -25,6 +26,7 @@ function createServer(pool = database) {
         res.end();
         return;
       }
+
       if (await handleUserRoutes(req, res, pool)) {
         return;
       }
