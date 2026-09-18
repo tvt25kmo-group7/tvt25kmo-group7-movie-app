@@ -115,8 +115,6 @@ describe('DELETE /api/users/me', () => {
     process.env.JWT_SECRET_KEY = 'account-del-test-key';
 
     const { pool, queries } = createTestPool();
-    const { pool } = createTestPool();
-
     const server = createServer(pool);
     const token = createToken({
       id: 42,
