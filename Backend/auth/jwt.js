@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomUUID } from 'node:crypto';
 
 const { sign, verify } = jwt;
 
@@ -11,6 +12,7 @@ function createToken(user) {
     process.env.JWT_SECRET_KEY,
     {
       expiresIn: "1h",
+      jwtid: randomUUID(),
     },
   );
 }

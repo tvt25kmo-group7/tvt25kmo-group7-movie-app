@@ -1,6 +1,5 @@
 import { database } from "../services/database.js";
 
-// Finds an existing account by email for login and registration checks.
 async function findUserByEmail(email) {
   const result = await database.query(
     `

@@ -3,6 +3,8 @@
 import { authenticateRequest } from '../auth/auth.js';
 import { loginUser, registerUser } from '../services/authService.js';
 import { deleteUserById } from '../services/userService.js';
+import { verifyToken } from '../auth/jwt.js';
+import { revokeToken } from '../auth/tokenRevocation.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;
 
@@ -95,6 +97,10 @@ async function handleUserRoutes(req, res, pool) {
 
   if (url.pathname === '/api/users/login') {
     return handleLogin(req, res);
+  }
+
+  if (url.pathname === '/api/users/logout') {
+    return handleLogout(req, res);
   }
 
   if (url.pathname === '/api/users/me') {
@@ -262,6 +268,34 @@ async function handleRegisterRoute(req, res) {
 
     return true;
   }
+}
+
+function handleLogout(req, res) {
+  if (req.method !== 'POST') {
+    sendJson(
+      res,
+      405,
+      { error: 'This action requires a POST request' },
+      { Allow: 'POST' },
+    );
+
+    return true;
+  }
+
+  if (!authenticateRequest(req, res)) {
+    return true;
+  }
+
+  const token = req.headers.authorization.slice(7);
+  const { exp } = verifyToken(token);
+
+  revokeToken(token, exp);
+
+  sendJson(res, 200, {
+    message: 'Logged out successfully',
+  });
+
+  return true;
 }
 
 export { handleUserRoutes, handleRegisterRoute };

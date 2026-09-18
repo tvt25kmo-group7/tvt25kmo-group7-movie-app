@@ -1,5 +1,6 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+
 import { createServer } from '../app.js';
 import { createToken } from '../auth/jwt.js';
 import { deleteUserById } from '../services/userService.js';
@@ -114,6 +115,8 @@ describe('DELETE /api/users/me', () => {
     process.env.JWT_SECRET_KEY = 'account-del-test-key';
 
     const { pool, queries } = createTestPool();
+    const { pool } = createTestPool();
+
     const server = createServer(pool);
     const token = createToken({
       id: 42,
