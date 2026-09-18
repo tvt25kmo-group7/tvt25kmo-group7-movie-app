@@ -23,9 +23,29 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
-  function logout() {
-    sessionStorage.removeItem('user');
-    setUser(null);
+  async function logout() {
+    const token = user?.token;
+
+    try {
+      if (!token) {
+        return false;
+      }
+
+      const response = await fetch('http://localhost:5000/api/users/logout', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Logout request failed:', error);
+      return false;
+    } finally {
+      sessionStorage.removeItem('user');
+      setUser(null);
+    }
   }
 
   return (

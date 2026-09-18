@@ -13,7 +13,7 @@ export default function Profile() {
         </div>
 
         <button type="button" className="button-primary">
-          Sign Out
+          Logout
         </button>
       </div>
 
