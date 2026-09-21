@@ -1,15 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './profile.css';
 
 export default function Profile() {
   const [activeSection, setActiveSection] = useState('rated');
+  const { user, authenticatedFetch } = useAuth();
+  const [account, setAccount] = useState(null);
+
+  // Haetaan tiedot vain kirjautuneen käyttäjän vaihtuessa.
+  // Token recycling ei käynnistä hakua uudelleen.
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAccount() {
+      try {
+        const response = await authenticatedFetch(
+          'http://localhost:5000/api/users/me',
+        );
+
+        if (!response.ok) {
+          console.error('Account request failed:', response.status);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setAccount(data);
+        }
+      } catch (error) {
+        console.error('Account request failed:', error);
+      }
+    }
+
+    loadAccount();
+
+    return () => {
+      cancelled = true;
+    };
+
+    // authenticatedFetch muuttuu tokenin vaihtuessa, mutta haluamme
+    // hakea tiedot vain käyttäjän ID:n vaihtuessa.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   return (
     <section className="profile-page">
       <div className="profile-header">
         <div>
-          <h1>Joona</h1>
-          <p>@Joona · plääplää jotakin</p>
+          <h1>{account?.username ?? user?.username ?? 'Profile'}</h1>
+          <p>@{account?.username ?? user?.username ?? 'user'}</p>
         </div>
 
         <button type="button" className="button-primary">
@@ -62,13 +108,12 @@ export default function Profile() {
 
             <div className="profile-account-row">
               <span>Email</span>
-              <span>joona@example.com</span>
+              <span>{account?.email ?? user?.email ?? '—'}</span>
             </div>
 
             <button type="button" className="button-secondary">
               Delete Account
             </button>
-            
           </section>
         </div>
 
@@ -83,7 +128,7 @@ export default function Profile() {
           {activeSection === 'favorites' && (
             <>
               <h2>Favorites</h2>
-              <p>Your favorite movies and series will be shown here.</p>
+              <p>Your favorite movies will be shown here.</p>
             </>
           )}
 

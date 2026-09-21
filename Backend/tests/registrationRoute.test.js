@@ -1,6 +1,7 @@
 import request from "supertest";
 import server from "../app.js";
 import { findUserByEmail } from "../models/userModel.js";
+import { database } from '../services/database.js';
 
 describe("User registration", () => {
   test("registration works with user information", async () => {
@@ -23,14 +24,18 @@ describe("User registration", () => {
     expect(savedUser.password).not.toBe(newUser.password);
     expect(savedUser.ConfirmPassword).toBeUndefined();
 
-    console.log({
-      status: response.status, 
-      response: response.body, 
-      saved: savedUser
-    });
-
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty("username", newUser.username);
     expect(response.body).not.toHaveProperty("password");
+
+    expect(response.body.token).toBeUndefined();
+    expect(response.headers['set-cookie']).toBeUndefined();
+
+    const result = await database.query(
+    'SELECT refresh_token FROM users WHERE id = $1',
+    [savedUser.id],
+    );
+
+    expect(result.rows[0].refresh_token).toBeNull();
   });
 });

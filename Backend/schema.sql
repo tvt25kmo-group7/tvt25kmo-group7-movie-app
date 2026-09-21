@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL,
     username VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    refresh_token TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     favorites_public BOOLEAN NOT NULL DEFAULT TRUE,
     favorites_share_token UUID,
