@@ -21,6 +21,9 @@ function createServer(pool = database) {
         'Content-Type, Authorization'
       );
 
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Expose-Headers', 'Authorization');
+
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();

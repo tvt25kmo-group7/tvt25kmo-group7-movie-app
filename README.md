@@ -17,33 +17,57 @@ git clone https://github.com/tvt25kmo-group7/tvt25kmo-group7-movie-app.git
 cd tvt25kmo-group7-movie-app
 ```
 
-Set the database variables before starting Docker Compose:
+Create a file named `Backend/.env`. Add the following variables and replace
+the example values with your own:
 
-```bash
-export DB_NAME=<your_database_name>
-export DB_USER=<your_database_user>
-export DB_PASSWORD=<your_database_password>
-export JWT_SECRET_KEY=<your_random_jwt_secret>
-docker compose up -d --build
+```dotenv
+DB_NAME=moviedb
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+TMDB_API_TOKEN=your_tmdb_api_token
+JWT_SECRET_KEY=your_first_random_secret
+JWT_REFRESH_SECRET=your_second_random_secret
 ```
 
-On PowerShell, use:
+**Generate the two JWT secrets separately.** Run this command in a terminal:
 
-```powershell
-$env:DB_NAME = "<your_database_name>"
-$env:DB_USER = "<your_database_user>"
-$env:DB_PASSWORD = "<your_database_password>"
-$env:JWT_SECRET_KEY = "<your_random_jwt_secret>"
-docker compose up -d --build
+```bash
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Copy its output into `JWT_SECRET_KEY`. Run the **same command again** and copy
+the new output into `JWT_REFRESH_SECRET`. The two values must be different.
+
+These are signing secrets, not user tokens. The backend creates access and
+refresh tokens automatically when a user logs in. Never commit `Backend/.env`
+or share the secrets.
+
+Start the application from the project root:
+
+```bash
+docker compose --env-file Backend/.env up -d --build
 ```
 
 The local services are available at:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:5000
-- PostgreSQL: localhost:5432
+- PostgreSQL: localhost:5433
 
-PostgreSQL data is stored in the Docker volume `postgres_movie_data`. Rebuilding or recreating the application containers does not delete the database. Do not remove this volume unless you intentionally want to delete the database.
+**Existing database:** If your `users` table was created before refresh tokens
+were introduced, run the following SQL statement against that database:
+
+```sql
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS refresh_token TEXT;
+```
+
+The updated `Backend/schema.sql` contains this column for databases created
+using the new schema. Do not delete an existing database to add the column.
+
+PostgreSQL data is stored in the Docker volume `postgres_movie_data`.
+Rebuilding application containers does not delete that data. Do not remove
+the volume unless you intentionally want to delete the database.
 
 ### GitHub Actions deployment
 

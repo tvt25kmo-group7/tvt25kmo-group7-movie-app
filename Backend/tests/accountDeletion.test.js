@@ -203,16 +203,15 @@ describe('DELETE /api/users/me', () => {
     expect(queries).toHaveLength(0);
   });
 
-  test('returns 405 when the HTTP method is not DELETE', async () => {
+  test('GET /api/users/me requires authentication', async () => {
     const { pool, queries } = createTestPool();
     const server = createServer(pool);
 
     const response = await request(server).get('/api/users/me');
 
-    expect(response.status).toBe(405);
-    expect(response.headers.allow).toBe('DELETE');
+    expect(response.status).toBe(401);
     expect(response.body).toEqual({
-      error: 'This action requires a DELETE request',
+      error: 'Authentication required',
     });
     expect(queries).toHaveLength(0);
   });
