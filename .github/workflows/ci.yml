@@ -35,6 +35,7 @@ jobs:
       DB_USER: movie_user
       DB_PASSWORD: changeme
       JWT_SECRET_KEY: test-jwt-secret
+      JWT_REFRESH_SECRET: test-refresh-secret
 
     steps:
       - name: Checkout repository
