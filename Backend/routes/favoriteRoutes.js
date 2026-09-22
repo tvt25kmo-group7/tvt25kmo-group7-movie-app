@@ -29,6 +29,13 @@ function readJsonBody(req) {
   });
 }
 
+
+console.log("Before favorites");
+
+
+
+
+
 export async function handleFavoriteRoutes(req, res) {
   const requestUrl = new URL(
     req.url,
@@ -41,7 +48,7 @@ export async function handleFavoriteRoutes(req, res) {
 
   if (!authenticateRequest(req, res)) {
     return true;
-  }s
+  }
 
   if (req.method === "GET") {
     try {
@@ -92,7 +99,8 @@ export async function handleFavoriteRoutes(req, res) {
     }
     return true;
   }
-
   sendJson(res, 405, { error: "Method not allowed" }, { Allow: "GET, POST" });
   return true;
 }
+
+console.log("After favorites");  

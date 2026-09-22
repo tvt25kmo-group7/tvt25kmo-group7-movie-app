@@ -49,5 +49,4 @@ async function addFavorite(userId, tmdbId, mediaType) {
   };
 }
 
-
 export default { getUserFavorites, addFavorite };
