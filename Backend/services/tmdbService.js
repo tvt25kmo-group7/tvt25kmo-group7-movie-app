@@ -211,7 +211,6 @@ async function searchMoviesAndTvCriteria(query, page = 1) {
 }
 
 //This part is for favorite routes, to get the media by id and media type from TMDB API
-//This part is not tested yet, but it is used in the favorite routes to get the media by id and media type from TMDB API
 async function getMoviesById(tmdbId, mediaType) {
   const url =
     `${TMDB_BASE_URL}/${mediaType}/${tmdbId}?language=en-US`;
