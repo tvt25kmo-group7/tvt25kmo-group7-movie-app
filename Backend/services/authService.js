@@ -1,13 +1,43 @@
-import bcrypt from "bcryptjs";
-import { createToken } from "../auth/jwt.js";
+import bcrypt from 'bcryptjs';
+
 import {
   createUser,
   findUserByEmail,
   findUserByUsername,
-} from "../models/userModel.js";
+  saveRefreshToken,
+  findUserByRefreshToken,
+} from '../models/userModel.js';
+
+import {
+  createToken,
+  createRefreshToken,
+  verifyRefreshToken,
+} from '../auth/jwt.js';
+
+async function createLoginSession(user) {
+  const token = createToken(user);
+  const refreshToken = createRefreshToken(user);
+
+  await saveRefreshToken(user.id, refreshToken);
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      token,
+    },
+    refreshToken,
+  };
+}
 
 async function loginUser(email, password) {
-  const user = await findUserByEmail(email);
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return null;
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = await findUserByEmail(cleanEmail);
 
   if (!user) {
     return null;
@@ -19,38 +49,28 @@ async function loginUser(email, password) {
     return null;
   }
 
-  const token = createToken(user);
-
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    token,
-  };
+  return createLoginSession(user);
 }
 
-// Validates registration data, creates the account, and returns a login token.
 async function registerUser(email, username, password) {
   if (
-    typeof email !== "string" ||
-    typeof username !== "string" ||
-    typeof password !== "string"
+    typeof email !== 'string' ||
+    typeof username !== 'string' ||
+    typeof password !== 'string'
   ) {
-    throw new Error("Email, username, and password are required");
+    throw new Error('Email, username, and password are required');
   }
 
-  // Normalize values before validation and database queries.
   const cleanEmail = email.trim().toLowerCase();
   const cleanUsername = username.trim();
 
-  // Check the basic format and length rules for each field.
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    throw new Error("Invalid email address");
+    throw new Error('Invalid email address');
   }
 
   if (!/^[a-zA-Z0-9_]{3,30}$/.test(cleanUsername)) {
     throw new Error(
-      "Username must be 3-30 characters and use only letters, numbers, or underscores",
+      'Username must be 3-30 characters and use only letters, numbers, or underscores',
     );
   }
 
@@ -60,44 +80,65 @@ async function registerUser(email, username, password) {
     !/[0-9]/.test(password)
   ) {
     throw new Error(
-      "Password must be at least 8 characters and contain an uppercase letter and a number",
+      'Password must be at least 8 characters and contain an uppercase letter and a number',
     );
   }
 
   try {
-    // Check early for friendly duplicate errors. The database constraints
-    // still protect against two simultaneous registration requests.
     const existingEmail = await findUserByEmail(cleanEmail);
+
     if (existingEmail) {
-      throw new Error("Email is already registered");
+      throw new Error('Email is already registered');
     }
 
     const existingUsername = await findUserByUsername(cleanUsername);
+
     if (existingUsername) {
-      throw new Error("Username is already taken");
+      throw new Error('Username is already taken');
     }
 
-    // Store only the bcrypt hash, never the original password.
     const passwordHash = await bcrypt.hash(password, 10);
     const newUser = await createUser(cleanEmail, cleanUsername, passwordHash);
 
-    return {
-      id: newUser.id,
-      email: newUser.email,
-      username: newUser.username,
-      token: createToken(newUser),
-    };
+    return newUser;
   } catch (error) {
-    if (error.code === "23505") {
-      if (error.constraint?.includes("username")) {
-        throw new Error("Username is already taken");
+    if (error.code === '23505') {
+      if (error.constraint?.includes('username')) {
+        throw new Error('Username is already taken');
       }
 
-      throw new Error("Email is already registered");
+      throw new Error('Email is already registered');
     }
 
     throw error;
   }
 }
 
-export { loginUser, registerUser };
+async function refreshAccessToken(refreshToken) {
+  let decoded;
+
+  try {
+    decoded = verifyRefreshToken(refreshToken);
+  } catch {
+    return null;
+  }
+
+  const user = await findUserByRefreshToken(refreshToken);
+
+  if (!user || user.id !== decoded.id) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    token: createToken(user),
+  };
+}
+
+export {
+  loginUser,
+  registerUser,
+  refreshAccessToken,
+};

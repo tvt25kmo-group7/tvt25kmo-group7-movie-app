@@ -1,0 +1,243 @@
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
+
+import { createServer } from '../app.js';
+import { createToken } from '../auth/jwt.js';
+import { deleteUserById } from '../services/userService.js';
+
+function createTestPool({ rowCount = 1, deleteError = null } = {}) {
+  const queries = [];
+
+  let released = false;
+
+  const client = {
+    async query(text, values) {
+      queries.push({ text, values });
+
+      if (text.includes('DELETE FROM users')) {
+        if (deleteError) {
+          throw deleteError;
+        }
+
+        return { rowCount };
+      }
+
+      return {};
+    },
+
+    release() {
+      released = true;
+    },
+  };
+
+  const pool = {
+    async connect() {
+      return client;
+    },
+  };
+
+  return {
+    pool,
+    queries,
+    wasReleased: () => released,
+  };
+}
+
+describe('deleteUserById service', () => {
+  test('deletes the user and commits teh transaction', async () => {
+    const { pool, queries, wasReleased } = createTestPool();
+
+    const deleted = await deleteUserById(42, pool);
+
+    expect(deleted).toBe(true);
+    expect(queries).toHaveLength(3);
+    expect(queries[0].text).toBe('BEGIN');
+    expect(queries[1].text).toContain('DELETE FROM users');
+    expect(queries[1].text).toContain('$1');
+    expect(queries[1].values).toEqual([42]);
+    expect(queries[2].text).toBe('COMMIT');
+    expect(wasReleased()).toBe(true);
+  });
+
+  test('returns false if user is not found', async () => {
+    const { pool, queries, wasReleased } = createTestPool({
+      rowCount: 0,
+    });
+
+    const deleted = await deleteUserById(42, pool);
+
+    expect(deleted).toBe(false);
+    expect(queries).toHaveLength(3);
+    expect(queries[0].text).toBe('BEGIN');
+    expect(queries[1].text).toContain('DELETE FROM users');
+    expect(queries[2].text).toBe('COMMIT');
+    expect(wasReleased()).toBe(true);
+  });
+
+  test('rolls back and releases the client if deletion fails', async () => {
+    const { pool, queries, wasReleased } = createTestPool({
+      deleteError: new Error('Database error'),
+    });
+
+    await expect(deleteUserById(42, pool)).rejects.toThrow('Database error');
+
+    expect(queries).toHaveLength(3);
+    expect(queries[0].text).toBe('BEGIN');
+    expect(queries[1].text).toContain('DELETE FROM users');
+    expect(queries[2].text).toBe('ROLLBACK');
+    expect(wasReleased()).toBe(true);
+  });
+
+  test.each([0, -1, 1.5, '42', null, undefined])(
+    'rejects invalid user ID: %s',
+    async (userId) => {
+      const { pool, queries, wasReleased } = createTestPool();
+
+      await expect(deleteUserById(userId, pool)).rejects.toThrow(TypeError);
+
+      expect(queries).toHaveLength(0);
+      expect(wasReleased()).toBe(false);
+    },
+  );
+
+  test.each([null, undefined, {}, { connect: 'not a function' }])(
+    'rejects invalid db pool',
+    async (invalidPool) => {
+      await expect(deleteUserById(42, invalidPool)).rejects.toThrow(
+        'A PostgreSQL connection pool is required',
+      );
+    },
+  );
+});
+
+describe('DELETE /api/users/me', () => {
+  test('returns 204 when the authenticated user is deleted', async () => {
+    process.env.JWT_SECRET_KEY = 'account-del-test-key';
+
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+    const token = createToken({
+      id: 42,
+      email: 'user@example.com',
+    });
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(204);
+    expect(response.body).toEqual({});
+    expect(queries[1].values).toEqual([42]);
+  });
+
+  test('returns 404 when the authenticated user is not found', async () => {
+    process.env.JWT_SECRET_KEY = 'account-del-test-key';
+
+    const { pool } = createTestPool({ rowCount: 0 });
+    const server = createServer(pool);
+    const token = createToken({
+      id: 42,
+      email: 'user@example.com',
+    });
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'User account not found',
+    });
+  });
+
+  test('returns 401 when the authorization token is missing', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server).delete('/api/users/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Authentication required',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 401 when the authorization token is invalid', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer invalid-token`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Invalid or expired token',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 401 when the authorization toke is expired', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+    const token = jwt.sign(
+      {
+        id: 42,
+        email: 'user@example.com',
+      },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: '-1s',
+      },
+    );
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Invalid or expired token',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('GET /api/users/me requires authentication', async () => {
+    const { pool, queries } = createTestPool();
+    const server = createServer(pool);
+
+    const response = await request(server).get('/api/users/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Authentication required',
+    });
+    expect(queries).toHaveLength(0);
+  });
+
+  test('returns 500 when account deletion fails', async () => {
+    process.env.JWT_SECRET_KEY = 'account-del-test-key';
+
+    const { pool, queries, wasReleased } = createTestPool({
+      deleteError: new Error('Database error'),
+    });
+    const server = createServer(pool);
+    const token = createToken({
+      id: 42,
+      email: 'user@example.com',
+    });
+
+    const response = await request(server)
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: 'Unable to delete the account',
+    });
+
+    expect(queries[2].text).toBe('ROLLBACK');
+    expect(wasReleased()).toBe(true);
+  });
+});

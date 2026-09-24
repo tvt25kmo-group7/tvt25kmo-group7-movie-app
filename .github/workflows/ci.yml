@@ -1,12 +1,62 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - integration
+      - main
   pull_request:
     branches:
       - integration
       - main
 
 jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: movie_database_test
+          POSTGRES_USER: movie_user
+          POSTGRES_PASSWORD: changeme
+        options: >-
+          --health-cmd "pg_isready -U movie_user -d movie_database_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: movie_database_test
+      DB_USER: movie_user
+      DB_PASSWORD: changeme
+      JWT_SECRET_KEY: test-jwt-secret
+      JWT_REFRESH_SECRET: test-refresh-secret
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Create test database schema
+        run: PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -f Backend/schema.sql
+
+      - name: Run backend tests
+        working-directory: Backend
+        run: npm test
+
   frontend-build:
     runs-on: ubuntu-latest
 
