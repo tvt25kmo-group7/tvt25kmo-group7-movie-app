@@ -215,4 +215,30 @@ async function searchMoviesAndTvCriteria(query, page = 1) {
   };
 }
 
-export { getNowPlayingMovies, searchMoviesAndTv, searchMoviesAndTvCriteria };
+//This part is for favorite routes, to get the media by id and media type from TMDB API
+async function getMoviesById(tmdbId, mediaType) {
+  const url =
+    `${TMDB_BASE_URL}/${mediaType}/${tmdbId}?language=en-US`;
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `TMDB API request failed with status ${response.status}`,
+    );
+  }
+
+  const data = await response.json();
+
+  return normalizeSearchResult({
+    ...data,
+    media_type: mediaType,
+  });
+}
+
+export { getNowPlayingMovies, searchMoviesAndTv, searchMoviesAndTvCriteria, getMoviesById };

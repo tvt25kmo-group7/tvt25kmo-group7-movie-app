@@ -1,13 +1,23 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 const AuthContext = createContext(null);
 const API_URL = 'http://localhost:5000/api/users';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
+  // Palautetaan istunto refresh-cookien avulla.
   useEffect(() => {
-    // Palautetaan istunto, jos selaimessa on voimassa oleva refresh-cookie.
+    let cancelled = false;
+
     async function restoreSession() {
       try {
         const response = await fetch(`${API_URL}/refresh`, {
@@ -20,22 +30,31 @@ export function AuthProvider({ children }) {
         }
 
         const userData = await response.json();
-        setUser(userData);
+
+        if (!cancelled) {
+          setUser(userData);
+        }
       } catch (error) {
         console.error('Session restoration failed:', error);
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
       }
     }
 
     restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Tallennetaan backendiltä kirjautumisen jälkeen saadut käyttäjä- ja token-tiedot.
-  function login(userData) {
+  const login = useCallback((userData) => {
     setUser(userData);
-  }
+  }, []);
 
-  // Mitätöidään refresh token backendissä ja tyhjennetään käyttäjä paikallisesti.
-  async function logout() {
+  const logout = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/logout`, {
         method: 'POST',
@@ -49,10 +68,9 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
     }
-  }
+  }, []);
 
-  // Tallennetaan Authorization-headerissa palautettu uusi access token.
-  function updateAccessToken(response) {
+  const updateAccessToken = useCallback((response) => {
     const authorization = response.headers.get('Authorization');
 
     if (!response.ok || !authorization?.startsWith('Bearer ')) {
@@ -60,67 +78,103 @@ export function AuthProvider({ children }) {
     }
 
     const token = authorization.slice(7);
-    setUser(currentUser => ({ ...currentUser, token }));
-  }
 
-  // Haetaan refresh-cookien avulla uusi access token ja käyttäjätiedot.
-  async function refreshAccessToken() {
-    const response = await fetch(`${API_URL}/refresh`, {
-      method: 'POST',
-      credentials: 'include',
+    setUser(currentUser => {
+      if (!currentUser) {
+        return currentUser;
+      }
+
+      return {
+        ...currentUser,
+        token,
+      };
     });
+  }, []);
 
-    if (!response.ok) {
+  const refreshAccessToken = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        setUser(null);
+        return null;
+      }
+
+      const refreshedUser = await response.json();
+      setUser(refreshedUser);
+
+      return refreshedUser.token;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       setUser(null);
       return null;
     }
+  }, []);
 
-    const refreshedUser = await response.json();
-    setUser(refreshedUser);
-    return refreshedUser.token;
-  }
+  const authenticatedFetch = useCallback(
+    async (url, options = {}) => {
+      if (!user?.token) {
+        throw new Error('Authentication required');
+      }
 
-  // Lähetetään suojattu pyyntö ja uusitaan token kerran, jos se on vanhentunut.
-  async function authenticatedFetch(url, options = {}) {
-    if (!user?.token) {
-      throw new Error('Authentication required');
-    }
+      const headers = new Headers(options.headers);
+      headers.set('Authorization', `Bearer ${user.token}`);
 
-    const headers = new Headers(options.headers);
-    headers.set('Authorization', `Bearer ${user.token}`);
+      let response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+      });
 
-    let response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
+      if (response.status !== 401) {
+        updateAccessToken(response);
+        return response;
+      }
 
-    if (response.status !== 401) {
+      // Access token vanheni.
+      const newToken = await refreshAccessToken();
+
+      if (!newToken) {
+        return response;
+      }
+
+      headers.set('Authorization', `Bearer ${newToken}`);
+
+      response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+      });
+
       updateAccessToken(response);
+
       return response;
-    }
+    },
+    [user?.token, refreshAccessToken, updateAccessToken],
+  );
 
-    // Access token vanheni, joten haetaan uusi token refresh-cookien avulla.
-    const newToken = await refreshAccessToken();
-
-    if (!newToken) {
-      return response;
-    }
-
-    // Yritetään alkuperäinen pyyntö kerran uudelleen uudella access tokenilla.
-    headers.set('Authorization', `Bearer ${newToken}`);
-    response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
-
-    updateAccessToken(response);
-    return response;
-  }
+  const contextValue = useMemo(
+    () => ({
+      user,
+      authLoading,
+      login,
+      logout,
+      authenticatedFetch,
+    }),
+    [
+      user,
+      authLoading,
+      login,
+      logout,
+      authenticatedFetch,
+    ],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, authenticatedFetch }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
