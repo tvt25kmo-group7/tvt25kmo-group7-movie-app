@@ -1,17 +1,11 @@
-import { verifyToken } from './jwt.js';
-import { isTokenRevoked } from './tokenRevocation.js';
+import { createToken, verifyToken } from './jwt.js';
 
-function authenticateRequest(req, res) {
+function authenticateRequest(req, res, { recycleToken = true } = {}) {
   const authorization = req.headers.authorization;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
     res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(
-      JSON.stringify({
-        error: 'Authentication required',
-      }),
-    );
-
+    res.end(JSON.stringify({ error: 'Authentication required' }));
     return false;
   }
 
@@ -20,24 +14,20 @@ function authenticateRequest(req, res) {
   try {
     const decoded = verifyToken(token);
 
-    if (isTokenRevoked(token)) {
-      throw new Error('Token has been revoked');
-    }
-
     req.user = {
       id: decoded.id,
       email: decoded.email,
     };
 
+    if (recycleToken) {
+      const newToken = createToken(req.user);
+      res.setHeader('Authorization', `Bearer ${newToken}`);
+    }
+
     return true;
   } catch {
     res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(
-      JSON.stringify({
-        error: 'Invalid or expired token',
-      }),
-    );
-
+    res.end(JSON.stringify({ error: 'Invalid or expired token' }));
     return false;
   }
 }

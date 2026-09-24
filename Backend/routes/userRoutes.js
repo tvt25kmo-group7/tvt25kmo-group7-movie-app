@@ -1,10 +1,8 @@
-// User authentication and account management routes.
-
 import { authenticateRequest } from '../auth/auth.js';
-import { loginUser, registerUser } from '../services/authService.js';
+import { loginUser,registerUser,refreshAccessToken } from '../services/authService.js';
 import { deleteUserById } from '../services/userService.js';
-import { verifyToken } from '../auth/jwt.js';
-import { revokeToken } from '../auth/tokenRevocation.js';
+import { clearRefreshToken,findUserById } from '../models/userModel.js';
+import { createToken } from '../auth/jwt.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;
 
@@ -23,6 +21,40 @@ function sendJson(res, statusCode, data, headers = {}) {
   });
 
   res.end(JSON.stringify(data));
+}
+
+function createRefreshCookie(refreshToken) {
+  return [
+    `refreshToken=${refreshToken}`,
+    'HttpOnly',
+    'SameSite=Lax',
+    'Path=/api/users',
+    'Max-Age=604800',
+    ...(process.env.NODE_ENV === 'production' ? ['Secure'] : []),
+  ].join('; ');
+}
+
+function getRefreshTokenFromCookie(req) {
+  const cookies = req.headers.cookie?.split(';') ?? [];
+
+  const refreshCookie = cookies
+    .map(cookie => cookie.trim())
+    .find(cookie => cookie.startsWith('refreshToken='));
+
+  return refreshCookie
+    ? refreshCookie.slice('refreshToken='.length)
+    : null;
+}
+
+function createClearRefreshCookie() {
+  return [
+    'refreshToken=',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Path=/api/users',
+    'Max-Age=0',
+    ...(process.env.NODE_ENV === 'production' ? ['Secure'] : []),
+  ].join('; ');
 }
 
 function readJsonBody(req, maxSizeBytes = MAX_BODY_BYTES) {
@@ -99,11 +131,19 @@ async function handleUserRoutes(req, res, pool) {
     return handleLogin(req, res);
   }
 
+  if (url.pathname === '/api/users/refresh') {
+    return handleRefresh(req, res);
+  }
+
   if (url.pathname === '/api/users/logout') {
     return handleLogout(req, res);
   }
 
   if (url.pathname === '/api/users/me') {
+    if (req.method === 'GET') {
+      return handleGetMe(req, res);
+    }
+
     return handleDeleteMe(req, res, pool);
   }
 
@@ -137,9 +177,9 @@ async function handleLogin(req, res) {
       return true;
     }
 
-    const user = await loginUser(email, password);
+    const session = await loginUser(email, password);
 
-    if (!user) {
+    if (!session) {
       sendJson(res, 401, {
         error: 'Invalid email or password',
       });
@@ -147,7 +187,9 @@ async function handleLogin(req, res) {
       return true;
     }
 
-    sendJson(res, 200, user);
+    sendJson(res, 200, session.user, {
+      'Set-Cookie': createRefreshCookie(session.refreshToken),
+    });
 
     return true;
   } catch (error) {
@@ -171,6 +213,85 @@ async function handleLogin(req, res) {
   }
 }
 
+async function handleRefresh(req, res) {
+  if (req.method !== 'POST') {
+    sendJson(
+      res,
+      405,
+      { error: 'This action requires a POST request' },
+      { Allow: 'POST' },
+    );
+
+    return true;
+  }
+
+  const refreshToken = getRefreshTokenFromCookie(req);
+
+  if (!refreshToken) {
+    sendJson(res, 401, {
+      error: 'Refresh token required',
+    });
+
+    return true;
+  }
+
+  try {
+    const user = await refreshAccessToken(refreshToken);
+
+    if (!user) {
+      sendJson(res, 401, {
+        error: 'Invalid or expired refresh token',
+      });
+
+      return true;
+    }
+
+    sendJson(res, 200, user);
+
+    return true;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+
+    sendJson(res, 500, {
+      error: 'Unable to refresh token',
+    });
+
+    return true;
+  }
+}
+
+async function handleGetMe(req, res) {
+  if (!authenticateRequest(req, res, { recycleToken: false })) {
+    return true;
+  }
+
+  try {
+    const user = await findUserById(req.user.id);
+
+    if (!user) {
+      sendJson(res, 404, {
+        error: 'User account not found',
+      });
+
+      return true;
+    }
+
+    res.setHeader('Authorization', `Bearer ${createToken(user)}`);
+
+    sendJson(res, 200, user);
+
+    return true;
+  } catch (error) {
+    console.error('User lookup failed:', error);
+
+    sendJson(res, 500, {
+      error: 'Unable to retrieve user information',
+    });
+
+    return true;
+  }
+}
+
 async function handleDeleteMe(req, res, pool) {
   if (req.method !== 'DELETE') {
     sendJson(
@@ -183,7 +304,7 @@ async function handleDeleteMe(req, res, pool) {
     return true;
   }
 
-  if (!authenticateRequest(req, res)) {
+  if (!authenticateRequest(req, res, { recycleToken: false })) {
     return true;
   }
 
@@ -236,9 +357,13 @@ async function handleRegisterRoute(req, res) {
       return true;
     }
 
-    const user = await registerUser(email, username, password);
+    const newUser = await registerUser(email, username, password);
 
-    sendJson(res, 201, user);
+    sendJson(res, 201, {
+      id: newUser.id,
+      email: newUser.email,
+      username: newUser.username,
+    });
 
     return true;
   } catch (error) {
@@ -256,10 +381,12 @@ async function handleRegisterRoute(req, res) {
 
     const isConflict = error.message === 'Email is already registered'
       || error.message === 'Username is already taken';
+
     const isValidationError = error.message === 'Email, username, and password are required'
       || error.message === 'Invalid email address'
       || error.message.startsWith('Username must be')
       || error.message.startsWith('Password must be');
+
     const statusCode = isConflict ? 409 : isValidationError ? 400 : 500;
 
     sendJson(res, statusCode, {
@@ -270,7 +397,7 @@ async function handleRegisterRoute(req, res) {
   }
 }
 
-function handleLogout(req, res) {
+async function handleLogout(req, res) {
   if (req.method !== 'POST') {
     sendJson(
       res,
@@ -282,20 +409,30 @@ function handleLogout(req, res) {
     return true;
   }
 
-  if (!authenticateRequest(req, res)) {
+  try {
+    const refreshToken = getRefreshTokenFromCookie(req);
+
+    if (refreshToken) {
+      await clearRefreshToken(refreshToken);
+    }
+
+    sendJson(
+      res,
+      200,
+      { message: 'Logged out successfully' },
+      { 'Set-Cookie': createClearRefreshCookie() },
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Logout failed:', error);
+
+    sendJson(res, 500, {
+      error: 'Something went wrong while signing out',
+    });
+
     return true;
   }
-
-  const token = req.headers.authorization.slice(7);
-  const { exp } = verifyToken(token);
-
-  revokeToken(token, exp);
-
-  sendJson(res, 200, {
-    message: 'Logged out successfully',
-  });
-
-  return true;
 }
 
 export { handleUserRoutes, handleRegisterRoute };

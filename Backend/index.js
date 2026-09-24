@@ -13,6 +13,7 @@ import http from 'node:http';
 
 import { handleHealthRoute } from './routes/healthRoutes.js';
 import { handleMovieRoutes } from './routes/movieRoutes.js';
+import { handleFavoriteRoutes } from './routes/favoriteRoutes.js';
 import { handleSearchRoute } from "./routes/searchRoutes.js";
 import { handleUserRoutes } from './routes/userRoutes.js';
 import { database } from './services/database.js';
@@ -45,6 +46,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (await handleMovieRoutes(req, res)) {
+    return;
+  }
+
+  if (await handleFavoriteRoutes(req, res)) {
     return;
   }
 
