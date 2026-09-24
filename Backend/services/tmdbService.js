@@ -108,7 +108,12 @@ async function getNowPlayingMovies(page = 1) {
     page: data.page,
     totalPages: data.total_pages,
     displayedResults: data.results.length,
-    results: data.results,
+    results: data.results.map((result) =>
+      normalizeSearchResult({
+        ...result,
+        media_type: "movie",
+      })
+    ),
   };
 }
 
@@ -211,7 +216,6 @@ async function searchMoviesAndTvCriteria(query, page = 1) {
 }
 
 //This part is for favorite routes, to get the media by id and media type from TMDB API
-//This part is not tested yet, but it is used in the favorite routes to get the media by id and media type from TMDB API
 async function getMoviesById(tmdbId, mediaType) {
   const url =
     `${TMDB_BASE_URL}/${mediaType}/${tmdbId}?language=en-US`;
