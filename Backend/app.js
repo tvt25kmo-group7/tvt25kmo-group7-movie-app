@@ -47,7 +47,7 @@ function createServer(pool = database) {
         return;
       }
 
-      if (handleFavoriteRoutes(req, res)) {
+      if (await handleFavoriteRoutes(req, res)) {
         return;
       }
 

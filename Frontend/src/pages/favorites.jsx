@@ -25,7 +25,7 @@ export default function Favorites() {
           throw new Error('Failed to fetch favorite movies');
         }
         const data = await response.json();
-        setMovies(data);
+        setMovies(data.results ?? []);
       } catch (error) {
         console.error(error);
         setError('Could not load favorite movies');

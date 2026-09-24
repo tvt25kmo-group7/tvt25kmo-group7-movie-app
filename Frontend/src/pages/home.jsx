@@ -15,7 +15,8 @@ export default function Home() {
       try {
         const response = await fetch('/api/movies');
         if (!response.ok) {
-          throw new Error('Failed to fetch now-playing movies');
+          const body = await response.text();
+          throw new Error(`Failed to fetch now-playing movies`);
         }
 
         const data = await response.json();
@@ -98,14 +99,13 @@ export default function Home() {
                     <MovieCard 
                       key={movie.tmdbid} 
                       movieId={movie.tmdbid}
-                      mediaType={movie.media_type}
+                      mediaType={movie.mediaType}
                       title={movie.title} 
                       posterPath={movie.posterPath} 
                   />
                   ))}
                 </div>
               </div>
-          
               <button className="carousel-button"onClick={nextMovies}>&gt;</button>
             </div>
         )}
