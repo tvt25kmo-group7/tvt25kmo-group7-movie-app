@@ -108,7 +108,12 @@ async function getNowPlayingMovies(page = 1) {
     page: data.page,
     totalPages: data.total_pages,
     displayedResults: data.results.length,
-    results: data.results,
+    results: data.results.map((result) =>
+      normalizeSearchResult({
+        ...result,
+        media_type: "movie",
+      })
+    ),
   };
 }
 
