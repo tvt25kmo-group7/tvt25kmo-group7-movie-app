@@ -1,17 +1,16 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
+const API_URL = 'http://localhost:5000/api/users';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const sessionVersion = useRef(0);
 
   useEffect(() => {
-    const version = ++sessionVersion.current;
-
+    // Palautetaan istunto, jos selaimessa on voimassa oleva refresh-cookie.
     async function restoreSession() {
       try {
-        const response = await fetch('http://localhost:5000/api/users/refresh', {
+        const response = await fetch(`${API_URL}/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -21,32 +20,24 @@ export function AuthProvider({ children }) {
         }
 
         const userData = await response.json();
-
-        if (sessionVersion.current === version) {
-          setUser(userData);
-        }
+        setUser(userData);
       } catch (error) {
         console.error('Session restoration failed:', error);
       }
     }
 
     restoreSession();
-
-    return () => {
-      sessionVersion.current += 1;
-    };
   }, []);
 
+  // Tallennetaan backendiltä kirjautumisen jälkeen saadut käyttäjä- ja token-tiedot.
   function login(userData) {
-    sessionVersion.current += 1;
     setUser(userData);
   }
 
+  // Mitätöidään refresh token backendissä ja tyhjennetään käyttäjä paikallisesti.
   async function logout() {
-    const version = ++sessionVersion.current;
-
     try {
-      const response = await fetch('http://localhost:5000/api/users/logout', {
+      const response = await fetch(`${API_URL}/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -56,100 +47,76 @@ export function AuthProvider({ children }) {
       console.error('Logout request failed:', error);
       return false;
     } finally {
-      if (sessionVersion.current === version) {
-        setUser(null);
-      }
+      setUser(null);
     }
   }
 
+  // Tallennetaan Authorization-headerissa palautettu uusi access token.
+  function updateAccessToken(response) {
+    const authorization = response.headers.get('Authorization');
+
+    if (!response.ok || !authorization?.startsWith('Bearer ')) {
+      return;
+    }
+
+    const token = authorization.slice(7);
+    setUser(currentUser => ({ ...currentUser, token }));
+  }
+
+  // Haetaan refresh-cookien avulla uusi access token ja käyttäjätiedot.
+  async function refreshAccessToken() {
+    const response = await fetch(`${API_URL}/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      setUser(null);
+      return null;
+    }
+
+    const refreshedUser = await response.json();
+    setUser(refreshedUser);
+    return refreshedUser.token;
+  }
+
+  // Lähetetään suojattu pyyntö ja uusitaan token kerran, jos se on vanhentunut.
   async function authenticatedFetch(url, options = {}) {
     if (!user?.token) {
       throw new Error('Authentication required');
     }
 
-    const version = sessionVersion.current;
-    const currentToken = user.token;
+    const headers = new Headers(options.headers);
+    headers.set('Authorization', `Bearer ${user.token}`);
 
-    async function sendRequest(token) {
-      const headers = new Headers(options.headers);
-      headers.set('Authorization', `Bearer ${token}`);
-
-      return fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include',
-      });
-    }
-
-    function saveRecycledToken(response, sentToken) {
-      const authorization = response.headers.get('Authorization');
-
-      if (
-        !response.ok ||
-        !authorization?.startsWith('Bearer ') ||
-        sessionVersion.current !== version
-      ) {
-        return;
-      }
-
-      const newToken = authorization.slice(7);
-
-      setUser(currentUser => {
-        if (!currentUser || currentUser.token !== sentToken) {
-          return currentUser;
-        }
-
-        return { ...currentUser, token: newToken };
-      });
-    }
-
-    const response = await sendRequest(currentToken);
+    let response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
     if (response.status !== 401) {
-      saveRecycledToken(response, currentToken);
+      updateAccessToken(response);
       return response;
     }
 
-    // Älä uusi vanhaa istuntoa, jos käyttäjä ehti vaihtua.
-    if (sessionVersion.current !== version) {
+    // Access token vanheni, joten haetaan uusi token refresh-cookien avulla.
+    const newToken = await refreshAccessToken();
+
+    if (!newToken) {
       return response;
     }
 
-    // Access token ei kelvannut: kokeillaan refresh cookieta.
-    const refreshResponse = await fetch(
-      'http://localhost:5000/api/users/refresh',
-      {
-        method: 'POST',
-        credentials: 'include',
-      },
-    );
+    // Yritetään alkuperäinen pyyntö kerran uudelleen uudella access tokenilla.
+    headers.set('Authorization', `Bearer ${newToken}`);
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
-    if (sessionVersion.current !== version) {
-      return response;
-    }
-
-    if (!refreshResponse.ok) {
-      if (refreshResponse.status === 401) {
-        setUser(null);
-      }
-
-      return response;
-    }
-
-    const refreshedUser = await refreshResponse.json();
-
-    if (sessionVersion.current !== version) {
-      return response;
-    }
-
-    setUser(refreshedUser);
-
-    // Yritä alkuperäistä pyyntöä uudella tokenilla vain kerran.
-    const retryResponse = await sendRequest(refreshedUser.token);
-
-    saveRecycledToken(retryResponse, refreshedUser.token);
-
-    return retryResponse;
+    updateAccessToken(response);
+    return response;
   }
 
   return (
