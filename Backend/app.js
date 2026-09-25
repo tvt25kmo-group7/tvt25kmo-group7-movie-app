@@ -5,11 +5,32 @@ import { handleHealthRoute } from './routes/healthRoutes.js';
 import { handleMovieRoutes } from './routes/movieRoutes.js';
 import { handleSearchRoute } from './routes/searchRoutes.js';
 import { handleUserRoutes } from './routes/userRoutes.js';
+import { handleFavoriteRoutes } from './routes/favoriteRoutes.js';
 import { database } from './services/database.js';
 
 function createServer(pool = database) {
   return http.createServer(async (req, res) => {
     try {
+
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization'
+      );
+
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Expose-Headers', 'Authorization');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
       if (await handleUserRoutes(req, res, pool)) {
         return;
       }
@@ -23,6 +44,10 @@ function createServer(pool = database) {
       }
 
       if (handleHealthRoute(req, res)) {
+        return;
+      }
+
+      if (await handleFavoriteRoutes(req, res)) {
         return;
       }
 

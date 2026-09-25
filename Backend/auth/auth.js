@@ -1,16 +1,11 @@
-import { verifyToken } from "./jwt.js";
+import { createToken, verifyToken } from './jwt.js';
 
-function authenticateRequest(req, res) {
+function authenticateRequest(req, res, { recycleToken = true } = {}) {
   const authorization = req.headers.authorization;
 
-  if (!authorization || !authorization.startsWith("Bearer ")) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "Authentication required",
-      }),
-    );
-
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
     return false;
   }
 
@@ -24,15 +19,15 @@ function authenticateRequest(req, res) {
       email: decoded.email,
     };
 
+    if (recycleToken) {
+      const newToken = createToken(req.user);
+      res.setHeader('Authorization', `Bearer ${newToken}`);
+    }
+
     return true;
   } catch {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "Invalid or expired token",
-      }),
-    );
-
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid or expired token' }));
     return false;
   }
 }
