@@ -6,6 +6,7 @@ import { handleMovieRoutes } from './routes/movieRoutes.js';
 import { handleSearchRoute } from './routes/searchRoutes.js';
 import { handleUserRoutes } from './routes/userRoutes.js';
 import { handleFavoriteRoutes } from './routes/favoriteRoutes.js';
+import { handleReviewsRoutes } from './routes/reviewsRoutes.js';
 import { database } from './services/database.js';
 
 function createServer(pool = database) {
@@ -48,6 +49,10 @@ function createServer(pool = database) {
       }
 
       if (await handleFavoriteRoutes(req, res)) {
+        return;
+      }
+
+      if (await handleReviewsRoutes(req, res)) {
         return;
       }
 
