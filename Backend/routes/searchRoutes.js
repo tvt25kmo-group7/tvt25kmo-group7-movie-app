@@ -55,13 +55,12 @@ export async function handleSearchRoute(req, res) {
     return true;
   }
 
-  // Validate the page number before proceeding
   if (!Number.isInteger(page) || page < 1) {
     sendJson(res, 400, { error: "Page must be a positive integer" });
     return true;
   }
 
-  // Perform the search using the TMDB service and handle any errors.
+ 
   try {
     const searchResults = isCriteriaSearch
       ? await searchMoviesAndTvCriteria(
