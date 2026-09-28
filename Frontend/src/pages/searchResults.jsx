@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import './searchResults.css';
 
+
 const genres = [
   { id: '16', name: 'Animation' },
   { id: '35', name: 'Comedy' },
@@ -10,6 +11,59 @@ const genres = [
   { id: '99', name: 'Documentary' },
   { id: '18', name: 'Drama' },
 ];
+
+
+const parseYearRange = (value) => {
+  const normalizedValue = value.trim().replace(/\s+/g, '');
+
+  if (!normalizedValue) {
+    return {
+      year: '',
+      yearFrom: '',
+      yearTo: '',
+    };
+  }
+
+  const match = normalizedValue.match(
+    /^(\d{4})(?:-(\d{4}))?$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const firstYear = match[1];
+  const secondYear = match[2];
+
+  if (
+    Number(firstYear) < 1878 ||
+    (secondYear && Number(secondYear) < 1878)
+  ) {
+    return null;
+  }
+
+  if (
+    secondYear &&
+    Number(firstYear) > Number(secondYear)
+  ) {
+    return null;
+  }
+
+  if (secondYear) {
+    return {
+      year: '',
+      yearFrom: firstYear,
+      yearTo: secondYear,
+    };
+  }
+
+  return {
+    year: firstYear,
+    yearFrom: '',
+    yearTo: '',
+  };
+};
+
 
 export default function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,12 +74,19 @@ export default function SearchResults() {
   const yearFrom = searchParams.get('yearFrom') ?? '';
   const yearTo = searchParams.get('yearTo') ?? '';
 
+  const initialYearRange =
+    year ||
+    (
+      yearFrom && yearTo
+        ? `${yearFrom}-${yearTo}`
+        : yearFrom || yearTo
+    );
+
   const [searchQuery, setSearchQuery] = useState(query);
   const [selectedGenre, setSelectedGenre] = useState(genre);
-  const [selectedYearFrom, setSelectedYearFrom] = useState(
-    yearFrom || year
+  const [selectedYearRange, setSelectedYearRange] = useState(
+    initialYearRange
   );
-  const [selectedYearTo, setSelectedYearTo] = useState(yearTo);
 
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,8 +96,14 @@ export default function SearchResults() {
   useEffect(() => {
     setSearchQuery(query);
     setSelectedGenre(genre);
-    setSelectedYearFrom(yearFrom || year);
-    setSelectedYearTo(yearTo);
+
+    if (year) {
+      setSelectedYearRange(year);
+    } else if (yearFrom && yearTo) {
+      setSelectedYearRange(`${yearFrom}-${yearTo}`);
+    } else {
+      setSelectedYearRange(yearFrom || yearTo);
+    }
   }, [query, genre, year, yearFrom, yearTo]);
 
   useEffect(() => {
@@ -59,6 +126,10 @@ export default function SearchResults() {
         if (hasCriteria) {
           const criteriaParams = new URLSearchParams();
 
+          if (query) {
+            criteriaParams.set('query', query);
+          }
+
           if (genre) {
             criteriaParams.set('genre', genre);
           }
@@ -75,7 +146,8 @@ export default function SearchResults() {
             criteriaParams.set('yearTo', yearTo);
           }
 
-          requestUrl = `/api/search/criteria?${criteriaParams.toString()}`;
+          requestUrl =
+            `/api/search/criteria?${criteriaParams.toString()}`;
         } else {
           requestUrl =
             `/api/search?query=${encodeURIComponent(query)}`;
@@ -122,16 +194,14 @@ export default function SearchResults() {
   const handleCriteriaSearch = (event) => {
     event.preventDefault();
 
-    const trimmedYearFrom = selectedYearFrom.trim();
-    const trimmedYearTo = selectedYearTo.trim();
+    const parsedYears = parseYearRange(selectedYearRange);
 
     setError('');
     setCriteriaError('');
 
     if (
       !selectedGenre &&
-      !trimmedYearFrom &&
-      !trimmedYearTo
+      !selectedYearRange.trim()
     ) {
       setCriteriaError(
         'Select a genre or enter a year.'
@@ -139,48 +209,41 @@ export default function SearchResults() {
       return;
     }
 
-    const isValidYear = (value) => {
-      if (!value) {
-        return true;
-      }
-
-      return /^\d{4}$/.test(value) && Number(value) >= 1878;
-    };
-
-    if (
-      !isValidYear(trimmedYearFrom) ||
-      !isValidYear(trimmedYearTo)
-    ) {
+    if (!parsedYears) {
       setCriteriaError(
-        'Years must be valid four-digit years.'
-      );
-      return;
-    }
-
-    if (
-      trimmedYearFrom &&
-      trimmedYearTo &&
-      Number(trimmedYearFrom) > Number(trimmedYearTo)
-    ) {
-      setCriteriaError(
-        'The starting year cannot be later than the ending year.'
+        'Enter a year like 2008 or a range like 2000-2010.'
       );
       return;
     }
 
     const newSearchParams = new URLSearchParams();
 
+    if (searchQuery.trim()) {
+      newSearchParams.set(
+        'query',
+        searchQuery.trim()
+      );
+    }
+
     if (selectedGenre) {
       newSearchParams.set('genre', selectedGenre);
     }
 
-    if (trimmedYearFrom && trimmedYearTo) {
-      newSearchParams.set('yearFrom', trimmedYearFrom);
-      newSearchParams.set('yearTo', trimmedYearTo);
-    } else if (trimmedYearFrom || trimmedYearTo) {
+    if (parsedYears.year) {
+      newSearchParams.set('year', parsedYears.year);
+    }
+
+    if (parsedYears.yearFrom) {
       newSearchParams.set(
-        'year',
-        trimmedYearFrom || trimmedYearTo
+        'yearFrom',
+        parsedYears.yearFrom
+      );
+    }
+
+    if (parsedYears.yearTo) {
+      newSearchParams.set(
+        'yearTo',
+        parsedYears.yearTo
       );
     }
 
@@ -245,33 +308,17 @@ export default function SearchResults() {
         </div>
 
         <div>
-          <label htmlFor="year-from">Year from</label>
+          <label htmlFor="year-range">
+            Year or year range
+          </label>
 
           <input
-            id="year-from"
-            type="number"
-            min="1878"
-            max="9999"
-            placeholder="2000"
-            value={selectedYearFrom}
+            id="year-range"
+            type="text"
+            placeholder="2008 or 2000-2010"
+            value={selectedYearRange}
             onChange={(event) =>
-              setSelectedYearFrom(event.target.value)
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="year-to">Year to</label>
-
-          <input
-            id="year-to"
-            type="number"
-            min="1878"
-            max="9999"
-            placeholder="2010"
-            value={selectedYearTo}
-            onChange={(event) =>
-              setSelectedYearTo(event.target.value)
+              setSelectedYearRange(event.target.value)
             }
           />
         </div>
