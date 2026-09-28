@@ -26,7 +26,7 @@ export default function Profile() {
     async function loadAccount() {
       try {
         const response = await authenticatedFetch(
-          'http://localhost:5000/api/users/me',
+          '/api/users/me',
         );
 
         if (!response.ok) {
@@ -61,7 +61,7 @@ export default function Profile() {
 
     try {
       const response = await authenticatedFetch(
-        'http://localhost:5000/api/users/me',
+        '/api/users/me',
         { method: 'DELETE' },
       );
 
