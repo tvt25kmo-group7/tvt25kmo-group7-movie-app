@@ -19,7 +19,7 @@ export default function Favorites() {
     async function fetchFavoriteMovies() {
       try {
         const response = await authenticatedFetch(
-          'http://localhost:5000/api/favorites'
+          '/api/favorites'
         );
         if (!response.ok) {
           throw new Error('Failed to fetch favorite movies');
