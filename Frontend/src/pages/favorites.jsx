@@ -59,7 +59,7 @@ export default function Favorites() {
           <div className="movie-grid">
             {movies.map((movie) => (
             <MovieCard
-              key={`${movie.mediaType}-${movie.tmdbId}`}
+              key={movie.tmdbId}
               movieId={movie.tmdbId}
               mediaType={movie.mediaType}
               title={movie.title} 
