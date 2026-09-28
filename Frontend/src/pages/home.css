@@ -45,15 +45,40 @@
   border: 1px solid var(--color-primary);
 }
 
+
+
 .now-playing h2 {
   margin-bottom: 1.5rem;
   color: var(--color-text);
 }
 
+
 .movie-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.movie-grid button {
+border: none;
+background: transparent;
+font-size: 2rem;
+cursor: pointer;
+}
+
+.movie-grid__frame {
+  width: 952px;
+  overflow: hidden;
+}
+
+.movie-grid__viewport {
+  display: flex;
+  gap: 24px;
+
+  transition: transform 0.4s ease;
+  transform: translateX(
+    calc(var(--carousel-index) * -244px)
+  );
 }
 
 @media (max-width: 768px) {

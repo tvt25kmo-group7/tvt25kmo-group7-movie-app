@@ -1,19 +1,95 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './profile.css';
 
 export default function Profile() {
+  const navigate = useNavigate();
+  const { user, authenticatedFetch, logout } = useAuth();
+
   const [activeSection, setActiveSection] = useState('rated');
+  const [account, setAccount] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  // Haetaan tiedot vain kirjautuneen käyttäjän vaihtuessa.
+  // Token recycling ei käynnistä hakua uudelleen.
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAccount() {
+      try {
+        const response = await authenticatedFetch(
+          'http://localhost:5000/api/users/me',
+        );
+
+        if (!response.ok) {
+          console.error('Account request failed:', response.status);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setAccount(data);
+        }
+      } catch (error) {
+        console.error('Account request failed:', error);
+      }
+    }
+
+    loadAccount();
+
+    return () => {
+      cancelled = true;
+    };
+
+    // authenticatedFetch muuttuu tokenin vaihtuessa, mutta haluamme
+    // hakea tiedot vain käyttäjän ID:n vaihtuessa.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  async function handleDeleteAccount() {
+    setIsDeleting(true);
+    setDeleteError('');
+
+    try {
+      const response = await authenticatedFetch(
+        'http://localhost:5000/api/users/me',
+        { method: 'DELETE' },
+      );
+
+      if (response.status !== 204) {
+        setDeleteError(`Account deletion failed (${response.status}).`);
+        return;
+      }
+
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Account deletion failed', error);
+      setDeleteError('Unable to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <section className="profile-page">
       <div className="profile-header">
         <div>
-          <h1>Joona</h1>
-          <p>@Joona · plääplää jotakin</p>
+          <h1>{account?.username ?? user?.username ?? 'Profile'}</h1>
+          <p>@{account?.username ?? user?.username ?? 'user'}</p>
         </div>
 
         <button type="button" className="button-primary">
-          Sign Out
+          Logout
         </button>
       </div>
 
@@ -62,13 +138,17 @@ export default function Profile() {
 
             <div className="profile-account-row">
               <span>Email</span>
-              <span>joona@example.com</span>
+              <span>{account?.email ?? user?.email ?? '—'}</span>
             </div>
 
-            <button type="button" className="button-secondary">
-              Delete Account
+            <button 
+            type="button" 
+            className="button-secondary" 
+            onClick={handleDeleteAccount} 
+            disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete Account'}
             </button>
-            
+            {deleteError && <p role="alert">{deleteError}</p>}
           </section>
         </div>
 
@@ -83,7 +163,7 @@ export default function Profile() {
           {activeSection === 'favorites' && (
             <>
               <h2>Favorites</h2>
-              <p>Your favorite movies and series will be shown here.</p>
+              <p>Your favorite movies will be shown here.</p>
             </>
           )}
 

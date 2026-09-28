@@ -1,11 +1,15 @@
 import './navBar.css';
+import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import LoginModal from './loginModal';
 import RegisterModal from './registerModal';
 
 export default function Navbar() {
+   const { user, logout } = useAuth();
+   const navigate = useNavigate();
+
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -13,7 +17,18 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
-  return (
+  async function handleLogout() {
+    const success = await logout();
+
+    if (!success) {
+      console.warn('Backend logout failed; local session was cleared');
+    }
+
+    closeMenu();
+    navigate('/');
+  }
+
+ return (
     <>
       <nav className="navbar">
         <div className="navbar__content">
@@ -52,16 +67,32 @@ export default function Navbar() {
               Favorites
             </Link>
 
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={() => {
-                setActiveModal('login');
-                closeMenu();
-              }}
-            >
-              Login
-            </button>
+            {user ? (
+              <>
+                <Link to="/profile" onClick={closeMenu}>
+                  {user.username}
+                </Link>
+
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => {
+                  setActiveModal('login');
+                  closeMenu();
+                }}
+              >
+                Login
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -81,4 +112,4 @@ export default function Navbar() {
       )}
     </>
   );
-}
+} 

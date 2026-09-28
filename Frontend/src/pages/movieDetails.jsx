@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 import ShareWithGroupModal from '../components/shareWithGroupModal';
 import CreateGroupModal from '../components/createGroupModal';
@@ -6,8 +7,35 @@ import CreateGroupModal from '../components/createGroupModal';
 import './movieDetails.css';
 
 export default function MovieDetails() {
+  const {user} = useAuth();
+
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+
+  const handleAddFavorite = async () => {
+    try {
+      const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          tmdbId: movieId,
+          mediaType: mediaType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add favorite');
+      }
+
+      const result = await response.json();
+      console.log(result);
+    } catch (error) {
+      console.error('Error adding favorite:', error);
+    }
+  };
 
   return (
     <>
@@ -18,12 +46,15 @@ export default function MovieDetails() {
           </div>
 
           <div className="movie-details__poster-actions">
-            <button
-              type="button"
-              className="button-primary"
-            >
-              Add to Favorites
-            </button>
+            {user?.token && (
+                <button
+                type="button"
+                className="button-primary"
+                onClick={handleAddFavorite}
+                >
+                Add to Favorites
+              </button>
+            )}
 
             <button
               type="button"
@@ -33,6 +64,7 @@ export default function MovieDetails() {
               Share with Group
             </button>
           </div>
+
         </div>
 
         <div className="movie-details__content">
