@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import './home.css';
 
@@ -9,6 +10,9 @@ export default function Home() {
   const [error, setError] = useState('');
 
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchNowPlayingMovies() {
@@ -55,6 +59,19 @@ export default function Home() {
   };
 
 
+  const handleSearch = (event) => {
+    event.preventDefault();
+
+    const trimmedQuery = searchQuery.trim();
+
+    if (!trimmedQuery) {
+      return;
+    }
+
+    navigate(`/search?query=${encodeURIComponent(trimmedQuery)}`);
+  };
+
+
 
 
   return (
@@ -66,7 +83,7 @@ export default function Home() {
           Search for movies and series, save favorites and share them with your groups.
         </p>
 
-        <div className="search-bar">
+        <form className="search-bar" onSubmit={handleSearch}>
           <label htmlFor="home-search" className="visually-hidden">
             Search movies and series
           </label>
@@ -75,12 +92,14 @@ export default function Home() {
             id="home-search"
             type="search"
             placeholder="Search movies and series..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
 
-          <button type="button">
+          <button type="submit">
             Search
           </button>
-        </div>
+        </form>
       </section>
 
       <section className="now-playing">
