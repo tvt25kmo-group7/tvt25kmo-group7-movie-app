@@ -11,7 +11,7 @@
 }
 
 .movie-details__poster {
-  min-height: 420px;
+  max-width: 300px;
 
   display: grid;
   place-items: center;
@@ -21,6 +21,12 @@
   border-radius: 0.75rem;
 
   color: var(--color-text-muted);
+}
+
+.movie-details__poster img { 
+  display: block; 
+  width: 100%; 
+  height: auto; 
 }
 
 .movie-details__poster-actions {
