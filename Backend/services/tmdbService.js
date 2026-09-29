@@ -17,6 +17,8 @@ function normalizeSearchResult(result) {
     overview: result.overview || "",
     posterPath: result.poster_path || null,
     voteAverage: result.vote_average ?? null, // "nullish coalescing operator", returns null if result.vote_average is undefined or null
+    genres: (result.genres ?? []).map(
+      ({ id, name }) => ({ id, name })),
   };
 }
 

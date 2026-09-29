@@ -128,9 +128,9 @@ export default function MovieDetails() {
           </div>
 
           <div className="movie-details__genres">
-            <span>Action</span>
-            <span>Sci-Fi</span>
-            <span>Drama</span>
+            {(movieDetails.genres ?? []).map((genre) => (
+              <span key={genre.id}>{genre.name}</span>
+            ))}
           </div>
 
           <section className="movie-details__section">
