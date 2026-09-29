@@ -289,8 +289,8 @@ export default function Home() {
                 <div className="movie-grid__viewport" style={{ '--carousel-index': currentIndex }}>
                   {carouselMovies.map((movie) => (
                     <MovieCard 
-                      key={movie.tmdbid} 
-                      movieId={movie.tmdbid}
+                      key={movie.tmdbId} 
+                      movieId={movie.tmdbId}
                       mediaType={movie.mediaType}
                       title={movie.title} 
                       posterPath={movie.posterPath} 
