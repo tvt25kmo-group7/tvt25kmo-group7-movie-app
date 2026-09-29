@@ -47,23 +47,22 @@ export async function handleSearchRoute(req, res) {
     return true;
   }
 
-  // Validate the page number before proceeding
   if (!Number.isInteger(page) || page < 1) {
     sendJson(res, 400, { error: 'Page must be a positive integer' });
     return true;
   }
 
-  // Perform the search using the TMDB service and handle any errors.
+ 
   try {
     const searchResults =
       isCriteriaSearch ?
         await searchMoviesAndTvCriteria(
           {
-            genre: requestUrl.searchParams.get('genre') ?? undefined,
-            mediaType: requestUrl.searchParams.get('mediaType') ?? undefined,
-            year: requestUrl.searchParams.get('year') ?? undefined,
-            yearFrom: requestUrl.searchParams.get('yearFrom') ?? undefined,
-            yearTo: requestUrl.searchParams.get('yearTo') ?? undefined,
+            genre: requestUrl.searchParams.get("genre") ?? undefined,
+            mediaType: requestUrl.searchParams.get("mediaType") ?? undefined,
+            year: requestUrl.searchParams.get("year") ?? undefined,
+            yearFrom: requestUrl.searchParams.get("yearFrom") ?? undefined,
+            yearTo: requestUrl.searchParams.get("yearTo") ?? undefined,
           },
           page,
         )

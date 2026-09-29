@@ -70,5 +70,17 @@ jobs:
                 -v postgres_movie_data:/var/lib/postgresql/data \
                 postgres:16
             fi
+
+            echo "Waiting for database to accept connections..."
+            for i in $(seq 1 30); do
+              if docker exec movie-db pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+
+            docker exec -i movie-db psql -U "$DB_USER" -d "$DB_NAME" < Backend/schema.sql
+            docker exec -i movie-db psql -U "$DB_USER" -d "$DB_NAME" < Backend/seed.sql
+
             docker ps
 

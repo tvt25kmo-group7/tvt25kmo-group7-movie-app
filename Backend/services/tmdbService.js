@@ -17,6 +17,8 @@ function normalizeSearchResult(result) {
     overview: result.overview || "",
     posterPath: result.poster_path || null,
     voteAverage: result.vote_average ?? null, // "nullish coalescing operator", returns null if result.vote_average is undefined or null
+    genres: (result.genres ?? []).map(
+      ({ id, name }) => ({ id, name })),
   };
 }
 
@@ -117,12 +119,12 @@ async function getNowPlayingMovies(page = 1) {
   };
 }
 
-async function searchMoviesAndTvCriteria(query, page = 1) {
-  const { genre, mediaType, year, yearFrom, yearTo } = query;
+async function searchMoviesAndTvCriteria(criteria, page = 1) {
+  const { query: name, genre, mediaType, year, yearFrom, yearTo } = criteria;
   const startYear = yearFrom ?? year;
   const endYear = yearTo ?? year;
 
-  if (!genre && !mediaType && !startYear && !endYear) {
+  if (!name && !genre && !mediaType && !startYear && !endYear) {
     throw new Error("At least one search criterion is required");
   }
 
@@ -155,6 +157,16 @@ async function searchMoviesAndTvCriteria(query, page = 1) {
   }
 
   const mediaTypes = mediaType ? [mediaType] : SUPPORTED_MEDIA_TYPES;
+
+  if (name) {
+    return searchByNameWithCriteria(name, page, {
+      genre,
+      mediaTypes,
+      startYear,
+      endYear,
+    });
+  }
+
   const results = [];
   let totalPages = 0;
 
@@ -210,6 +222,69 @@ async function searchMoviesAndTvCriteria(query, page = 1) {
   return {
     page,
     totalPages,
+    displayedResults: results.length,
+    results,
+  };
+}
+
+async function searchByNameWithCriteria(name, page, { genre, mediaTypes, startYear, endYear }) {
+  const searchParams = new URLSearchParams({
+    query: name,
+    page: String(page),
+    language: "en-US",
+  });
+
+  const url = `${TMDB_BASE_URL}/search/multi?${searchParams.toString()}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`TMDB API request failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!Array.isArray(data.results)) {
+    throw new Error("TMDB response did not contain a results array");
+  }
+
+  const genreId = genre ? Number(genre) : undefined;
+
+  const results = data.results
+    .filter((result) => mediaTypes.includes(result.media_type))
+    .filter((result) => genreId === undefined || result.genre_ids?.includes(genreId))
+    .filter((result) => {
+      if (startYear === undefined && endYear === undefined) {
+        return true;
+      }
+
+      const dateValue = result.release_date || result.first_air_date;
+      const resultYear = dateValue ? Number(dateValue.slice(0, 4)) : undefined;
+
+      if (!resultYear) {
+        return false;
+      }
+
+      if (startYear !== undefined && resultYear < Number(startYear)) {
+        return false;
+      }
+
+      if (endYear !== undefined && resultYear > Number(endYear)) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(normalizeSearchResult);
+
+  return {
+    page: data.page,
+    totalPages: data.total_pages,
     displayedResults: results.length,
     results,
   };
