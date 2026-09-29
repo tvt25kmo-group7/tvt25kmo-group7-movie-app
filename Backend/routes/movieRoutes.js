@@ -1,4 +1,4 @@
-import { getNowPlayingMovies } from "../services/tmdbService.js";
+import { getNowPlayingMovies, getMoviesById } from "../services/tmdbService.js";
 
 // Utility function to send JSON responses with appropriate headers and status codes
 function sendJson(res, statusCode, body, headers = {}) {
@@ -15,6 +15,45 @@ export async function handleMovieRoutes(req, res) {
     req.url,
     `http://${req.headers.host || "localhost"}`,
   );
+
+  const pathParts = requestUrl.pathname.split("/");
+
+  if (pathParts.length === 5) {
+    const mediaType = pathParts[3];
+    const movieId = Number(pathParts[4]);
+
+    // Check that the media type is supported
+    if (!["movie", "tv"].includes(mediaType)) {
+      sendJson(res, 400, {
+        error: "mediaType must be movie or tv",
+      });
+      return true;
+    }
+
+    // Check that the ID is a positive integer
+    if (!Number.isInteger(movieId) || movieId < 1) {
+      sendJson(res, 400, {
+        error: "movieId must be a positive integer",
+      });
+      return true;
+    }
+
+    try {
+      const movie = await getMoviesById(movieId, mediaType);
+      sendJson(res, 200, movie);
+    } catch (error) {
+      console.error(
+        "TMDB movie details request failed:",
+        error.message,
+      );
+
+      sendJson(res, 502, {
+        error: "Movie details are temporarily unavailable",
+      });
+    }
+
+    return true;
+  }
 
   // This handler only handles the /api/movies path
   if (requestUrl.pathname !== "/api/movies") {
@@ -35,6 +74,7 @@ export async function handleMovieRoutes(req, res) {
     sendJson(res, 400, { error: "Page must be a positive integer" });
     return true;
   }
+
 
   // Fetch now-playing movies and handle any errors
   try {

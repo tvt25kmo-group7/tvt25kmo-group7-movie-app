@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 import ShareWithGroupModal from '../components/shareWithGroupModal';
@@ -7,10 +8,20 @@ import CreateGroupModal from '../components/createGroupModal';
 import './movieDetails.css';
 
 export default function MovieDetails() {
-  const {user} = useAuth();
+  const { movieId, mediaType } = useParams();
+  const {user, authenticatedFetch} = useAuth();
+
+  const [movieDetails, setMovieDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+
+  const posterUrl = movieDetails?.posterPath
+    ? `https://image.tmdb.org/t/p/w500${movieDetails.posterPath}`
+    : null;
 
   const handleAddFavorite = async () => {
     try {
@@ -37,12 +48,50 @@ export default function MovieDetails() {
     }
   };
 
+  useEffect(() => {
+    async function fetchMovieDetails() {
+      try {
+        const response = await fetch(`/api/movies/${mediaType}/${movieId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch movie details');
+        }
+
+        const data = await response.json();
+        setMovieDetails(data);
+      } catch (error) {
+        console.error('Error fetching movie details:', error);
+        setError('Failed to fetch movie details');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMovieDetails();
+  }, [mediaType, movieId]);
+
+  if (loading) {
+    return <p>Loading movie details...</p>;
+  }
+  if (error) {
+    return <p>{error}</p>;
+  }
+  if (!movieDetails) {
+    return <p>No movie details available.</p>;
+  }
+
   return (
     <>
       <section className="movie-details">
         <div className="movie-details__poster-column">
           <div className="movie-details__poster">
-            Poster
+            {posterUrl ? (
+              <img 
+              src={posterUrl} 
+              alt={movieDetails.title} 
+              />
+            ) : (
+              <span> No poster image available</span> 
+            )}
           </div>
 
           <div className="movie-details__poster-actions">
@@ -68,27 +117,27 @@ export default function MovieDetails() {
         </div>
 
         <div className="movie-details__content">
-          <h1>Movie Title</h1>
+          <h1>{movieDetails.title}</h1>
 
           <div className="movie-details__meta">
-            <span>2026</span>
+            <span>{movieDetails.releaseDate?.split('-')[0]}</span>
             <span>•</span>
-            <span>2h 10min</span>
+            <span> min</span>
             <span>•</span>
-            <span>★★★★☆ 4.2/5 katotaa mitä näistä laitetaan tähän</span>
+            <span>★★★★☆ /5</span>
           </div>
 
           <div className="movie-details__genres">
-            <span>Action</span>
-            <span>Sci-Fi</span>
-            <span>Drama</span>
+            {(movieDetails.genres ?? []).map((genre) => (
+              <span key={genre.id}>{genre.name}</span>
+            ))}
           </div>
 
           <section className="movie-details__section">
             <h2>Synopsis</h2>
 
             <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+                {movieDetails.overview || "No synopsis available."}
             </p>
           </section>
 
