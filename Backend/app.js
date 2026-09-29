@@ -7,20 +7,20 @@ import { handleSearchRoute } from './routes/searchRoutes.js';
 import { handleUserRoutes } from './routes/userRoutes.js';
 import { handleFavoriteRoutes } from './routes/favoriteRoutes.js';
 import { handleReviewsRoutes } from './routes/reviewsRoutes.js';
+import { handleGroupsRoute } from './routes/groupsRoutes.js';
 import { database } from './services/database.js';
 
 function createServer(pool = database) {
   return http.createServer(async (req, res) => {
     try {
-
       res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
       res.setHeader(
         'Access-Control-Allow-Methods',
-        'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+        'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       );
       res.setHeader(
         'Access-Control-Allow-Headers',
-        'Content-Type, Authorization'
+        'Content-Type, Authorization',
       );
 
       res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -41,6 +41,10 @@ function createServer(pool = database) {
       }
 
       if (await handleSearchRoute(req, res)) {
+        return;
+      }
+
+      if (await handleGroupsRoute(req, res)) {
         return;
       }
 
