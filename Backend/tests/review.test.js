@@ -1,12 +1,90 @@
 import request from "supertest";
 import server from "../app.js";
 import { createToken } from "../auth/jwt.js";
+import { database } from "../services/database.js";
 
-//  Create a signed token so POST requests pass authentication and reach validation.
+//  Create a  token so POST requests are able to pass authentication and reach validation.
 const reviewTestToken = createToken({ id: 1, email: "review-test@example.com" });
 
+async function withReviewFixture(testBody) {
+	const uniqueValue = `${Date.now()}${Math.floor(Math.random() * 100000)}`;
+	const user = {
+		username: `reviewuser${uniqueValue}`,
+		email: `reviewuser${uniqueValue}@example.com`,
+		password: "Password1",
+		ConfirmPassword: "Password1",
+	};
+	const tmdbId = 1_000_000_000 + Math.floor(Math.random() * 1_000_000_000);
+	const reviewText = "An integration-test review";
+
+	try {
+		const registration = await request(server)
+			.post("/api/users/register")
+			.send(user);
+		expect(registration.status).toBe(201);
+
+		const login = await request(server)
+			.post("/api/users/login")
+			.send({ email: user.email, password: user.password });
+		expect(login.status).toBe(200);
+
+		const creation = await request(server)
+			.post("/api/reviews")
+			.set("Authorization", `Bearer ${login.body.token}`)
+			.send({ mediaType: "movie", tmdbId, rating: 4, reviewText });
+		expect(creation.status).toBe(201);
+
+		await testBody({ username: user.username, tmdbId, reviewText });
+	} finally {
+		await database.query("DELETE FROM users WHERE email = $1", [user.email]);
+	}
+}
+
+describe("Review retrieval", () => {
+	test("returns existing reviews without authentication and includes review details", async () => {
+		await withReviewFixture(async ({ username, tmdbId, reviewText }) => {
+			const response = await request(server)
+				.get("/api/reviews")
+				.query({ mediaType: "movie", tmdbId });
+
+			console.log("Anonymous review retrieval:", {
+				status: response.status,
+				tmdbId,
+				reviewsReturned: response.body.length,
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(1);
+			expect(response.body[0]).toMatchObject({
+				review_text: reviewText,
+				rating: 4,
+				username,
+			});
+			expect(response.body[0].created_at).toBeDefined();
+			expect(Number.isNaN(Date.parse(response.body[0].created_at))).toBe(false);
+		});
+	});
+
+	test("does not return reviews for an unrelated movie ID", async () => {
+		await withReviewFixture(async ({ tmdbId }) => {
+			const unrelatedTmdbId = tmdbId + 1000;
+			const response = await request(server)
+				.get("/api/reviews")
+				.query({ mediaType: "movie", tmdbId: unrelatedTmdbId });
+
+			console.log("Unrelated movie review retrieval:", {
+				status: response.status,
+				requestedTmdbId: unrelatedTmdbId,
+				reviewsReturned: response.body.length,
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.body).toEqual([]);
+		});
+	});
+});
+
 describe("Review retrieval validation", () => {
-	
 	test.each([
 		{ tmdbId: "", reason: "ID is empty" },
 		{ tmdbId: "not-a-number", reason: "ID is not number" },
@@ -24,12 +102,11 @@ describe("Review retrieval validation", () => {
 	});
 
 	test("rejects an unsupported media type", async () => {
-		//  A valid ID isolates the invalid media type as the reason for failure.
 		const response = await request(server)
 			.get("/api/reviews")
 			.query({ mediaType: "book", tmdbId: 12345 });
 
-		// Step 4: Confirm the service validation error is returned to the client.
+		
 		expect(response.status).toBe(400);
 		expect(response.body.error).toBe("Media type must be 'movie' or 'tv'");
 	});
@@ -37,12 +114,10 @@ describe("Review retrieval validation", () => {
 
 describe("Review creation validation", () => {
 	test("requires authentication", async () => {
-		// Send a valid-looking review without a bearer token.
 		const response = await request(server)
 			.post("/api/reviews")
 			.send({ mediaType: "movie", tmdbId: 12345, rating: 4, reviewText: "Good" });
 
-		// Step 2: Confirm unauthenticated users cannot create reviews.
 		expect(response.status).toBe(401);
 		expect(response.body.error).toBe("Authentication required");
 	});
@@ -73,7 +148,7 @@ describe("Review creation validation", () => {
 			.set("Authorization", `Bearer ${reviewTestToken}`)
 			.send(newReview);
 
-		// Step 4: Confirm invalid review data is rejected with a client error.
+		
 		expect(response.status).toBe(400);
 		expect(response.body.error).toBeDefined();
 	});
