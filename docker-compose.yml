@@ -11,9 +11,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - postgres_movie_data:/var/lib/postgresql/data
+      - ./Backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
   # 2. NODE.JS BACKEND
   movie-backend:
@@ -21,7 +22,7 @@ services:
     container_name: movie-backend
     restart: always
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
       TMDB_API_TOKEN: ${TMDB_API_TOKEN:?TMDB_API_TOKEN is required}
       DB_HOST: movie-db
@@ -39,11 +40,12 @@ services:
     build: ./Frontend
     container_name: movie-frontend
     restart: always
+    environment:
+      API_PROXY_TARGET: http://movie-backend:5000
     ports:
-      - "5173:5173"
+      - '5173:5173'
     depends_on:
       - movie-backend
 
 volumes:
   postgres_movie_data:
-
