@@ -1,3 +1,5 @@
+//USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
+
 import { getReviewsByMedia, postCreateReview} from "../models/reviewsModel.js";
 
 // Validates the media reference and fetches its reviews with reviewer info

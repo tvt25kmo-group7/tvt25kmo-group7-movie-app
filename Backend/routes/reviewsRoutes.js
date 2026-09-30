@@ -1,3 +1,4 @@
+//USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
 import { getMediaReviews, createReview } from "../services/reviewService.js";
 import { authenticateRequest } from "../auth/auth.js";
 
@@ -27,7 +28,7 @@ function readJsonBody(req) {
   });
 }
 
-
+//get mtehod 
 export async function handleReviewsRoutes(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
@@ -56,7 +57,7 @@ export async function handleReviewsRoutes(req, res) {
 
 
 
-  //post method validation (only registered member is allowed to create reviews )
+  //post method. registered members are allowed to use
   if (req.method === "POST") {
     if (!authenticateRequest(req, res)) {
       return true;
