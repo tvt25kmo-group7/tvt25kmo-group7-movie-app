@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import CreateGroupModal from '../components/createGroupModal';
 import './groups.css';
 
@@ -61,9 +62,15 @@ export default function Groups() {
           {!loading &&
             !error &&
             groups.map((group) => (
-              <article className="group-card" key={group.id}>
-                <h2>{group.name}</h2>
-              </article>
+              <Link
+                to={`/groups/${group.id}`}
+                className="group-card-link"
+                key={group.id}
+              >
+                <article className="group-card">
+                  <h2>{group.name}</h2>
+                </article>
+              </Link>
             ))}
         </div>
       </section>

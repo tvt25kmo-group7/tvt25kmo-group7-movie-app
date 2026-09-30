@@ -1,72 +1,52 @@
-import MovieCard from '../components/movieCard';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+
 import './groupDetails.css';
 
 export default function GroupDetails() {
+  const { id } = useParams();
+
+  const [group, setGroup] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchGroups() {
+      try {
+        const response = await fetch(`/api/groups/${id}`);
+
+        if (response.status === 404) {
+          throw new Error('Group not found');
+        }
+
+        if (!response.ok) {
+          throw new Error('Group could not be loaded');
+        }
+
+        const data = await response.json();
+        setGroup(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchGroups();
+  }, [id]);
+
+  if (loading) {
+    return <p>Loading group...</p>;
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
+
   return (
     <section className="group-details-page">
       <aside className="group-details-sidebar">
-        <h1>ryhmän nimi</h1>
-        <p>Created October 2023 · 1 Active Members</p>
-
-        <button type="button" className="button-secondary">
-          Delete Group
-        </button>
-
-        <section className="group-members">
-          <h2>Members & Requests</h2>
-
-          <h3>Join Requests (2)</h3>
-
-          <div className="join-request">
-            <span>@Jani</span>
-
-            <div className="join-request__actions">
-              <button type="button" className="button-primary">
-                Accept
-              </button>
-
-              <button type="button" className="button-secondary">
-                Reject
-              </button>
-            </div>
-          </div>
-
-          <div className="join-request">
-            <span>@Marianna</span>
-
-            <div className="join-request__actions">
-              <button type="button" className="button-primary">
-                Accept
-              </button>
-
-              <button type="button" className="button-secondary">
-                Reject
-              </button>
-            </div>
-          </div>
-
-          <h3>Current Members</h3>
-
-          <div className="current-member">
-            <span>@Joona</span>
-            <span>Admin</span>
-          </div>
-        </section>
+        <h1>{group.name}</h1>
       </aside>
-
-      <section className="group-playlist">
-        <h2>Shared Movie Playlist</h2>
-
-        <p>
-          
-        </p>
-
-        <div className="movie-grid">
-          <MovieCard title="Blade Runner 2049" />
-          <MovieCard title="Arrival" />
-          <MovieCard title="Dune: Part Two" />
-        </div>
-      </section>
     </section>
   );
 }

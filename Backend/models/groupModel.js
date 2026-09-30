@@ -31,4 +31,15 @@ async function getAllGroups() {
   return result.rows;
 }
 
-export { insertGroup, insertGroupMember, getAllGroups };
+async function getGroupById(groupId) {
+  const result = await database.query(
+    `SELECT id, name
+    FROM groups
+    WHERE id = $1
+    `,
+    [groupId],
+  );
+  return result.rows[0] ?? null;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById };
