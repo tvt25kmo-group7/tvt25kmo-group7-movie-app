@@ -1,3 +1,4 @@
+//USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
 import { database } from "../services/database.js";
 
 // Fetches reviews for a movie/tv title along with the reviewer's username
