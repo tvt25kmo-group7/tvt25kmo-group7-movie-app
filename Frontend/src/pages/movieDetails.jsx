@@ -24,12 +24,15 @@ export default function MovieDetails() {
     : null;
 
   const handleAddFavorite = async () => {
+    if (!user?.token) {
+      return;
+    }
+
     try {
-      const response = await fetch('/api/favorites', {
+      const response = await authenticatedFetch('/api/favorites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
         },
         body: JSON.stringify({
           tmdbId: movieId,
@@ -40,9 +43,6 @@ export default function MovieDetails() {
       if (!response.ok) {
         throw new Error('Failed to add favorite');
       }
-
-      const result = await response.json();
-      console.log(result);
     } catch (error) {
       console.error('Error adding favorite:', error);
     }
