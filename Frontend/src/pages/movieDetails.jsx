@@ -35,9 +35,9 @@ export default function MovieDetails() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          tmdbId: movieId,
-          mediaType: mediaType
-        })
+          tmdbId: Number(movieId),
+          mediaType: mediaType,
+        }),
       });
 
       if (!response.ok) {
