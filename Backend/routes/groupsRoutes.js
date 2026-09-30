@@ -7,7 +7,7 @@ Sends HTTP responses
 */
 import { authenticateRequest } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup } from '../services/groupsService.js';
+import { createGroup, getGroups } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -15,7 +15,6 @@ async function readJsonBody(req) {
   for await (const chunk of req) {
     body += chunk;
   }
-
   return JSON.parse(body);
 }
 
@@ -29,12 +28,23 @@ export async function handleGroupsRoute(req, res) {
     return false;
   }
 
+  if (req.method === 'GET') {
+    try {
+      const groups = await getGroups();
+      sendJson(res, 200, groups);
+    } catch (error) {
+      console.error('Fetching groups failed:', error);
+      sendJson(res, 500, { error: 'Group list could not be loaded' });
+    }
+    return true;
+  }
+
   if (req.method !== 'POST') {
     sendJson(
       res,
       405,
-      { error: 'Only group creation is supported here' },
-      { Allow: 'POST' },
+      { error: 'Only group browsing and creation are supported here' },
+      { Allow: 'GET, POST' },
     );
     return true;
   }
@@ -48,9 +58,7 @@ export async function handleGroupsRoute(req, res) {
     const name = body.name?.trim();
 
     if (!name || name.length > 100) {
-      sendJson(res, 400, {
-        error: 'Group name must contain 1-100 characters',
-      });
+      sendJson(res, 400, { error: 'Group name must contain 1-100 characters' });
       return true;
     }
 
@@ -73,6 +81,5 @@ export async function handleGroupsRoute(req, res) {
     console.error('Group creation failed:', error);
     sendJson(res, 500, { error: 'Group creation failed' });
   }
-
   return true;
 }

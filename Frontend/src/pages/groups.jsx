@@ -1,11 +1,32 @@
-import { useState } from 'react';
-
+import { useEffect, useState } from 'react';
 import CreateGroupModal from '../components/createGroupModal';
-
 import './groups.css';
 
 export default function Groups() {
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchGroups() {
+      try {
+        const response = await fetch('/api/groups');
+
+        if (!response.ok) {
+          throw new Error('Group list could not be loaded');
+        }
+        const data = await response.json();
+        setGroups(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchGroups();
+  }, []);
 
   return (
     <>
@@ -14,7 +35,8 @@ export default function Groups() {
           <div>
             <h1>Movie Groups</h1>
             <p>
-              Join groups with friends to share, watch, and rank movies together.
+              Join groups with friends to share, watch, and rank movies
+              together.
             </p>
           </div>
 
@@ -28,72 +50,26 @@ export default function Groups() {
         </div>
 
         <div className="groups-grid">
-          <article className="group-card">
-            <div className="group-card__header">
-              <h2>uuno turhapuurot</h2>
-              <span>12 members</span>
-            </div>
+          {loading && <p>Loading groups...</p>}
 
-            <p>
-              mitäs tänne
-            </p>
+          {error && <p>{error}</p>}
 
-            <button type="button" className="button-secondary">
-              Join Group
-            </button>
-          </article>
+          {!loading && !error && groups.length === 0 && (
+            <p>No groups available.</p>
+          )}
 
-          <article className="group-card">
-            <div className="group-card__header">
-              <h2>Komedia pläjäys</h2>
-              <span>8 members</span>
-            </div>
-
-            <p>
-              jotain hauskaa
-            </p>
-
-            <button type="button" className="button-secondary">
-              Join Group
-            </button>
-          </article>
-
-          <article className="group-card">
-            <div className="group-card__header">
-              <h2>Kamalaa kauhua</h2>
-              <span>4 members</span>
-            </div>
-
-            <p>
-              Ei nössöille.
-            </p>
-
-            <button type="button" className="button-secondary">
-              Join Group
-            </button>
-          </article>
-
-          <article className="group-card">
-            <div className="group-card__header">
-              <h2>Kissa videot</h2>
-              <span>6 members</span>
-            </div>
-
-            <p>
-              Hienoja kisuja ja kisuvideoita katsellaan ja jaetaan. xdd
-            </p>
-
-            <button type="button" className="button-secondary">
-              Join Group
-            </button>
-          </article>
+          {!loading &&
+            !error &&
+            groups.map((group) => (
+              <article className="group-card" key={group.id}>
+                <h2>{group.name}</h2>
+              </article>
+            ))}
         </div>
       </section>
 
       {createGroupModalOpen && (
-        <CreateGroupModal
-          onClose={() => setCreateGroupModalOpen(false)}
-        />
+        <CreateGroupModal onClose={() => setCreateGroupModalOpen(false)} />
       )}
     </>
   );

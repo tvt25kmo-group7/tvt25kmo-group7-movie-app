@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups } from '../models/groupModel.js';
 
 async function createGroup(name, ownerId) {
   const client = await database.connect();
@@ -27,4 +27,8 @@ async function createGroup(name, ownerId) {
   }
 }
 
-export { createGroup };
+async function getGroups() {
+  return getAllGroups(); 
+}
+
+export { createGroup, getGroups };
