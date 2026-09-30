@@ -1,6 +1,8 @@
 /*
 Creates groups and group memberships in the db.
 */
+import { database } from '../services/database.js';
+
 async function insertGroup(client, name, ownerId) {
   const result = await client.query(
     `INSERT INTO groups (name, owner_id)
@@ -20,4 +22,13 @@ async function insertGroupMember(client, groupId, userId) {
   );
 }
 
-export { insertGroup, insertGroupMember };
+async function getAllGroups() {
+  const result = await database.query(
+    `SELECT id, name 
+    FROM groups 
+    ORDER BY name ASC`,
+  );
+  return result.rows;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups };
