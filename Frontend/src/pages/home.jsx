@@ -276,7 +276,7 @@ export default function Home() {
       </section>
 
       <section className="now-playing">
-        <h2>Now Playing In Theaters In Finland</h2>
+        <h2>Now Playing In Theaters In Finnnnnland</h2>
 
         {loading && <p>Loading movies...</p>}
         {error && <p>{error}</p>}

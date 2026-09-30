@@ -42,9 +42,17 @@ export async function handleFavoriteRoutes(req, res) {
     `http://${req.headers.host || "localhost"}`,
   );
 
-  if (requestUrl.pathname !== "/api/favorites") {
+
+  const match = requestUrl.pathname.match(/^\/api\/favorites\/(\d+)$/);
+
+  if (!match) {
     return false;
   }
+
+const userId = Number(match[1]);
+  /*if (requestUrl.pathname !== "/api/favorites") {
+    return false;
+  }*/
 
   if (!authenticateRequest(req, res)) {
     return true;
@@ -52,7 +60,7 @@ export async function handleFavoriteRoutes(req, res) {
 
   if (req.method === "GET") {
     try {
-      const favorites = await favoriteService.getUserFavorites(req.user.id);
+      const favorites = await favoriteService.getUserFavorites(userId);
       sendJson(res, 200, favorites);
     } catch (error) {
       console.error("Get favorites failed:", error.message);
