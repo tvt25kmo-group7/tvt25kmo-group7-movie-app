@@ -66,3 +66,18 @@
     flex-direction: column;
   }
 }
+
+.group-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.group-card-link:hover .group-card {
+  border-color: var(--color-primary);
+}
+
+.group-card-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 0.75rem;
+}

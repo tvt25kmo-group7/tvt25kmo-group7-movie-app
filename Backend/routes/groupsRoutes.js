@@ -7,7 +7,7 @@ Sends HTTP responses
 */
 import { authenticateRequest } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroups } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -23,6 +23,26 @@ export async function handleGroupsRoute(req, res) {
     req.url,
     `http://${req.headers.host || 'localhost'}`,
   );
+
+  const match = requestUrl.pathname.match(/^\/api\/groups\/(\d+)$/);
+
+  if (match && req.method === 'GET') {
+    const groupId = Number(match[1]);
+
+    try {
+      const group = await getGroup(groupId);
+
+      if (!group) {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+      sendJson(res, 200, group);
+    } catch (error) {
+      console.error('Fetching group failed:', error);
+      sendJson(res, 500, { error: 'Group could not be loaded' });
+    }
+    return true;
+  }
 
   if (requestUrl.pathname !== '/api/groups') {
     return false;
