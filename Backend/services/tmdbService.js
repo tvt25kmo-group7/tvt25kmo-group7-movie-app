@@ -77,7 +77,7 @@ async function getNowPlayingMovies(page = 1) {
   // Construct the request parameters for the TMDB API request
   const searchParams = new URLSearchParams({
     region: "FI",
-    language: "fi-FI",
+    language: "en-US",
     page: String(page),
   });
 

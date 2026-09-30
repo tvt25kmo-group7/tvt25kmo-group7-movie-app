@@ -1,7 +1,6 @@
 import { authenticateRequest } from '../auth/auth.js';
 import { loginUser,registerUser,refreshAccessToken } from '../services/authService.js';
-import { deleteUserById } from '../services/userService.js';
-import { clearRefreshToken,findUserById } from '../models/userModel.js';
+import { clearRefreshToken,findUserById, deleteUserById } from '../models/userModel.js';
 import { createToken } from '../auth/jwt.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;

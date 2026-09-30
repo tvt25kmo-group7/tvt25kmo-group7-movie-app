@@ -17,6 +17,15 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
+  function handleProtectedClick(event) { 
+    closeMenu();
+    if (user?.token) { 
+      return;
+    }
+    event.preventDefault(); 
+    setActiveModal('login'); 
+  }
+
   async function handleLogout() {
     const success = await logout();
 
@@ -59,11 +68,11 @@ export default function Navbar() {
               Home
             </Link>
 
-            <Link to="/groups" onClick={closeMenu}>
+            <Link to={"/groups"} onClick={handleProtectedClick}>
               Groups
             </Link>
 
-            <Link to="/favorites" onClick={closeMenu}>
+            <Link to={`/favorites/${user?.id}`} onClick={handleProtectedClick}>
               Favorites
             </Link>
 
