@@ -7,8 +7,8 @@ import LoginModal from './loginModal';
 import RegisterModal from './registerModal';
 
 export default function Navbar() {
-   const { user, logout } = useAuth();
-   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,13 +17,13 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
-  function handleProtectedClick(event) { 
+  function handleProtectedClick(event) {
     closeMenu();
-    if (user?.token) { 
+    if (user?.token) {
       return;
     }
-    event.preventDefault(); 
-    setActiveModal('login'); 
+    event.preventDefault();
+    setActiveModal('login');
   }
 
   async function handleLogout() {
@@ -37,15 +37,11 @@ export default function Navbar() {
     navigate('/');
   }
 
- return (
+  return (
     <>
       <nav className="navbar">
         <div className="navbar__content">
-          <Link
-            className="navbar__logo"
-            to="/"
-            onClick={closeMenu}
-          >
+          <Link className="navbar__logo" to="/" onClick={closeMenu}>
             Movie App
           </Link>
 
@@ -68,7 +64,7 @@ export default function Navbar() {
               Home
             </Link>
 
-            <Link to={"/groups"} onClick={handleProtectedClick}>
+            <Link to={'/groups'} onClick={closeMenu}>
               Groups
             </Link>
 
@@ -76,7 +72,7 @@ export default function Navbar() {
               Favorites
             </Link>
 
-            {user ? (
+            {user ?
               <>
                 <Link to="/profile" onClick={closeMenu}>
                   {user.username}
@@ -90,8 +86,7 @@ export default function Navbar() {
                   Logout
                 </button>
               </>
-            ) : (
-              <button
+            : <button
                 type="button"
                 className="button-secondary"
                 onClick={() => {
@@ -101,7 +96,7 @@ export default function Navbar() {
               >
                 Login
               </button>
-            )}
+            }
           </div>
         </div>
       </nav>
@@ -121,4 +116,4 @@ export default function Navbar() {
       )}
     </>
   );
-} 
+}
