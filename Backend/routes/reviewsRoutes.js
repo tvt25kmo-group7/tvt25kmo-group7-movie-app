@@ -68,7 +68,6 @@ export async function handleReviewsRoutes(req, res) {
       const { mediaType, rating, reviewText } = body;
       const tmdbId = Number(body.tmdbId);
 
-      // createReview does the real validation of rating/text/mediaType/tmdbId in reviewsService.js
       const review = await createReview(
         req.user.id,
         mediaType,
@@ -78,7 +77,6 @@ export async function handleReviewsRoutes(req, res) {
       );
       sendJson(res, 201, review);
     } catch (error) {
-      // a duplicate review hits Postgres error code 23505
       if (error.code === "23505") {
         sendJson(res, 409, { error: "You already reviewed this title" });
       } else {
@@ -88,7 +86,6 @@ export async function handleReviewsRoutes(req, res) {
     return true;
   }
 
-  // Any other method on this path is unsupported
   sendJson(
     res,
     405,

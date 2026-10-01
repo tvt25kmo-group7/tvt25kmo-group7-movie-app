@@ -24,7 +24,7 @@ export default function MovieDetails() {
   const [reviewSubmitError, setReviewSubmitError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
 
-  // Lets the Review button scroll straight to the form below.
+  // Lets the Review button scroll straight to the form which is located bottom of the website.
   const reviewFormRef = useRef(null);
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -296,6 +296,7 @@ export default function MovieDetails() {
           <section className="movie-details__section">
             <h2>Reviews</h2>
 
+            {/* this secttion gives user showstext if the fetched data is loading, has an error, or is empty */}
             {reviewsLoading ? (
               <p role="status">Loading reviews...</p>
             ) : reviewError ? (
@@ -303,34 +304,35 @@ export default function MovieDetails() {
             ) : reviews.length === 0 ? (
               <p>No reviews yet.</p>
             ) : (
-              // Render one review card for each record returned by the backend.
+              // This renders review cards for every fetched review, meaning users are able to see existing reviews.
               reviews.map((review) => {
                 const rating = Number(review.rating);
 
                 return (
+                  // review card starts at this point
                   <article
                     className="review-card"
                     key={review.id ?? `${review.username}-${review.created_at}`}
                   >
                     <div className="review-card__header">
-                      {/* Display a five-star visualization and expose its value
-                          to assistive technology as readable text. */}
+                      {/* shows the stars on the rating. which are used for 1-5 rating.
+                      filled stars represent usergiven rating 1-5 and is counted from left to right.
+                      and empty stars represent the remaining rating up to 5. which are counted as 5 - rating. */}
                       <span aria-label={`${rating} out of 5 stars`}>
                         {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
                       </span>
 
                       {/* The API joins the review to its author and returns the
-                          username alongside the review data. */}
+                          username alongside the review data. backend handles joining the review with its author. */}
                       <strong>{review.username}</strong>
 
-                      {/* created_at is saved by the database when the review is
-                          published; dateTime preserves the machine-readable value. */}
+                      {/* shows date when the review is made, which is stored to the database when the review is created.*/}
                       <time dateTime={review.created_at}>
                         {new Date(review.created_at).toLocaleDateString()}
                       </time>
                     </div>
 
-                    {/* Review text is optional, so omit the paragraph if empty. */}
+                    {/* Renders the review text if it exists and check it is not just a empty whitespace. */}
                     {review.review_text?.trim() && <p>{review.review_text}</p>}
                   </article>
                 );
@@ -363,6 +365,7 @@ export default function MovieDetails() {
                       const isSelected = selectedRating >= rating;
 
                       return (
+                        //star rating for review form. each star represents a rating from 1 to 5.
                         <button
                           key={rating}
                           type="button"
@@ -382,6 +385,8 @@ export default function MovieDetails() {
                 </label>
 
                 <textarea
+                //textarea for writing the review text. it is bound to the reviewText state and updates it on change. user can type their review here.
+                //the value of the textarea is controlled by the reviewText state.
                   id="review-text"
                   rows="5"
                   placeholder="Write your review..."
