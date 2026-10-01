@@ -6,7 +6,7 @@ import { database } from "../services/database.js";
 //  Create a  token so POST requests are able to pass authentication and reach validation.
 const reviewTestToken = createToken({ id: 1, email: "review-test@example.com" });
 
-async function withReviewFixture(testBody) {
+async function withReviewFixture(testBody, { omitReviewText = false } = {}) {
 	const uniqueValue = `${Date.now()}${Math.floor(Math.random() * 100000)}`;
 	const user = {
 		username: `reviewuser${uniqueValue}`,
@@ -16,6 +16,10 @@ async function withReviewFixture(testBody) {
 	};
 	const tmdbId = 1_000_000_000 + Math.floor(Math.random() * 1_000_000_000);
 	const reviewText = "An integration-test review";
+	const reviewPayload = { mediaType: "movie", tmdbId, rating: 4 };
+	if (!omitReviewText) {
+		reviewPayload.reviewText = reviewText;
+	}
 
 	try {
 		const registration = await request(server)
@@ -31,7 +35,7 @@ async function withReviewFixture(testBody) {
 		const creation = await request(server)
 			.post("/api/reviews")
 			.set("Authorization", `Bearer ${login.body.token}`)
-			.send({ mediaType: "movie", tmdbId, rating: 4, reviewText });
+			.send(reviewPayload);
 		expect(creation.status).toBe(201);
 
 		await testBody({ username: user.username, tmdbId, reviewText });
@@ -41,6 +45,22 @@ async function withReviewFixture(testBody) {
 }
 
 describe("Review retrieval", () => {
+	test("allows an authenticated review without optional text", async () => {
+		await withReviewFixture(async ({ username, tmdbId }) => {
+			const response = await request(server)
+				.get("/api/reviews")
+				.query({ mediaType: "movie", tmdbId });
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(1);
+			expect(response.body[0]).toMatchObject({
+				rating: 4,
+				review_text: "",
+				username,
+			});
+		}, { omitReviewText: true });
+	});
+
 	test("returns existing reviews without authentication and includes review details", async () => {
 		await withReviewFixture(async ({ username, tmdbId, reviewText }) => {
 			const response = await request(server)
@@ -129,7 +149,6 @@ describe("Review creation validation", () => {
 		{ field: "rating", value: 0, reason: "rating is below the allowed range" },
 		{ field: "rating", value: 6, reason: "rating is above the allowed range" },
 		{ field: "rating", value: "5", reason: "rating is not a number" },
-		{ field: "reviewText", value: "", reason: "review text is empty" },
 		{ field: "reviewText", value: {}, reason: "review text is not a string" },
 		{ field: "reviewText", value: "x".repeat(1001), reason: "review text is too long" },
 	])("rejects invalid review when $reason", async ({ field, value }) => {
