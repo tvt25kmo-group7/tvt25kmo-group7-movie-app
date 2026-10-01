@@ -36,12 +36,19 @@ async function createReview(userId, mediaType, tmdbId, rating, reviewText){
   }
 
 
-  if (typeof reviewText !== "string" || reviewText.trim() === "") {
-    throw new Error("Review text must be a non-empty string");
+  const normalizedReviewText = reviewText ?? "";
+  if (typeof normalizedReviewText !== "string") {
+    throw new Error("Review text must be a string");
   }
-  if (reviewText.length > 1000) {
+  if (normalizedReviewText.length > 1000) {
     throw new Error("Review text must not exceed 1000 characters");
   }
-  return postCreateReview(userId, mediaType, tmdbId, rating, reviewText);
+  return postCreateReview(
+    userId,
+    mediaType,
+    tmdbId,
+    rating,
+    normalizedReviewText.trim(),
+  );
 }
 export { getMediaReviews, createReview };

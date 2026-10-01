@@ -4,7 +4,7 @@ import { database } from "../services/database.js";
 // Fetches reviews for a movie/tv title along with the reviewer's username
 async function getReviewsByMedia(mediaType, tmdbId) {
   const result = await database.query(
-    `SELECT reviews.review_text, reviews.rating, reviews.created_at, users.username
+    `SELECT reviews.id, reviews.review_text, reviews.rating, reviews.created_at, users.username
      FROM reviews
      JOIN users ON users.id = reviews.user_id
      WHERE reviews.media_type = $1 AND reviews.tmdb_id = $2

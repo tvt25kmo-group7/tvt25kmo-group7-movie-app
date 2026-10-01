@@ -58,6 +58,7 @@ export async function handleSearchRoute(req, res) {
       isCriteriaSearch ?
         await searchMoviesAndTvCriteria(
           {
+            query: query || undefined,
             genre: requestUrl.searchParams.get("genre") ?? undefined,
             mediaType: requestUrl.searchParams.get("mediaType") ?? undefined,
             year: requestUrl.searchParams.get("year") ?? undefined,
