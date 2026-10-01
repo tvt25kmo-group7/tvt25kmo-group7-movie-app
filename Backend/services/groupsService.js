@@ -31,8 +31,8 @@ async function getGroups() {
   return getAllGroups(); 
 }
 
-async function getGroup(groupId) {
-  return getGroupById(groupId);
+async function getGroup(groupId, userId = null) {
+  return getGroupById(groupId, userId);
 }
 
 export { createGroup, getGroups, getGroup };

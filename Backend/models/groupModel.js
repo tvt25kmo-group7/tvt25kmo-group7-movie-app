@@ -31,13 +31,19 @@ async function getAllGroups() {
   return result.rows;
 }
 
-async function getGroupById(groupId) {
+async function getGroupById(groupId, userId = null) {
   const result = await database.query(
-    `SELECT id, name
+    `SELECT 
+      groups.id, 
+      groups.name,
+      COALESCE(groupId.owner_id = $2, false) AS "isOwner"
+      group_members.status AS "membershipStatus"
     FROM groups
-    WHERE id = $1
-    `,
-    [groupId],
+    LEFT JOIN group_members
+      ON group_members.group_id = groups.id
+      AND group_members.user_id = $2
+    WHERE groups.id = $1`,
+    [groupId, userId],
   );
   return result.rows[0] ?? null;
 }

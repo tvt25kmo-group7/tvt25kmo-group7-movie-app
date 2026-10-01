@@ -1,35 +1,61 @@
 import { createToken, verifyToken } from './jwt.js';
 
-function authenticateRequest(req, res, { recycleToken = true } = {}) {
-  const authorization = req.headers.authorization;
+function sendAuthError(res, message) {
+  res.writeHead(401, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: message }));
+}
 
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Authentication required' }));
-    return false;
+function resolveUser(authorization) {
+  if (!authorization?.startsWith('Bearer ')) {
+    return null;
   }
 
-  const token = authorization.slice(7);
+  const decoded = verifyToken(authorization.slice(7));
+
+  return { 
+    id: decoded.id,
+    email: decoded.email
+  };
+}
+
+function authenticate(req, res, { required, recycleToken }) {
+  const authorization = req.headers.authorization;
+
+  if (!authorization) {
+    if (required) {
+      sendAuthError(res, 'Authentication required');
+      return false;
+    }
+    return true;
+  }
 
   try {
-    const decoded = verifyToken(token);
+    const user = resolveUser(authorization);
 
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-    };
+    if (!user) {
+      sendAuthError(res, 'Invalid or expired token');
+      return false;
+    }
+
+    req.user = user;
 
     if (recycleToken) {
-      const newToken = createToken(req.user);
-      res.setHeader('Authorization', `Bearer ${newToken}`);
+      res.setHeader('Authorization', `Bearer ${createToken(user)}`);
     }
 
     return true;
   } catch {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid or expired token' }));
+    sendAuthError(res, 'Invalid or expired token');
     return false;
   }
 }
 
-export { authenticateRequest };
+function authenticateRequest(req, res, { recycleToken = true } = {}) {
+  return authenticate(req, res, { required: true, recycleToken });
+}
+
+function authenticateOptionalRequest(req, res, { recycleToken = true } = {}) {
+  return authenticate(req, res, { required: false, recycleToken });
+}
+
+export { authenticateRequest, authenticateOptionalRequest };

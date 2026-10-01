@@ -5,7 +5,10 @@ Reads the request body
 Validates the group name
 Sends HTTP responses
 */
-import { authenticateRequest } from '../auth/auth.js';
+import {
+  authenticateRequest,
+  authenticateOptionalRequest,
+} from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
 import { createGroup, getGroup, getGroups } from '../services/groupsService.js';
 
@@ -27,10 +30,14 @@ export async function handleGroupsRoute(req, res) {
   const match = requestUrl.pathname.match(/^\/api\/groups\/(\d+)$/);
 
   if (match && req.method === 'GET') {
+    if (!authenticateOptionalRequest(req, res)) {
+      return true;
+    }
+
     const groupId = Number(match[1]);
 
     try {
-      const group = await getGroup(groupId);
+      const group = await getGroup(groupId, req.user?.id);
 
       if (!group) {
         sendJson(res, 404, { error: 'Group not found' });
