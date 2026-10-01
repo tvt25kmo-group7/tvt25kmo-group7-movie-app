@@ -1,5 +1,5 @@
 //USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
-import { getMediaReviews, createReview } from "../services/reviewService.js";
+import { getMediaReviews, getUserReviews, createReview } from "../services/reviewService.js";
 import { authenticateRequest } from "../auth/auth.js";
 
 
@@ -32,6 +32,21 @@ function readJsonBody(req) {
 export async function handleReviewsRoutes(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
+  // Own reviews are looked up from the authenticated token, never from a client-supplied ID
+  if (url.pathname === "/api/reviews/me" && req.method === "GET") {
+    if (!authenticateRequest(req, res)) {
+      return true;
+    }
+
+    try {
+      const reviews = await getUserReviews(req.user.id);
+      sendJson(res, 200, reviews);
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
+    return true;
+  }
+
   if (url.pathname !== "/api/reviews") {
     return false;
   }
@@ -53,7 +68,6 @@ export async function handleReviewsRoutes(req, res) {
     }
     return true;
   }
-
 
 
 

@@ -1,6 +1,6 @@
 //USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
 
-import { getReviewsByMedia, postCreateReview} from "../models/reviewsModel.js";
+import { getReviewsByMedia, getReviewsByUser, postCreateReview} from "../models/reviewsModel.js";
 
 // Validates the media reference and fetches its reviews with reviewer info
 async function getMediaReviews(mediaType, tmdbId) {
@@ -14,6 +14,15 @@ async function getMediaReviews(mediaType, tmdbId) {
   }
 
   return getReviewsByMedia(mediaType, tmdbId);
+}
+
+// Validates the user reference and fetches every review that user wrote
+async function getUserReviews(userId) {
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("User ID must be a positive integer");
+  }
+
+  return getReviewsByUser(userId);
 }
 
 
@@ -51,4 +60,4 @@ async function createReview(userId, mediaType, tmdbId, rating, reviewText){
     normalizedReviewText.trim(),
   );
 }
-export { getMediaReviews, createReview };
+export { getMediaReviews, getUserReviews, createReview };
