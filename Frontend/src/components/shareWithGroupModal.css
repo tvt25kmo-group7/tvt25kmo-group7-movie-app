@@ -48,3 +48,13 @@
   width: 100%;
   margin-top: 0.75rem;
 }
+
+.share-group-list button.is-selected {
+  background: var(--color-surface-secondary);
+  border-color: var(--color-primary);
+}
+
+.share-group-modal button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

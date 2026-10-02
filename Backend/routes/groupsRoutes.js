@@ -10,7 +10,7 @@ import {
   authenticateOptionalRequest,
 } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroup, getGroups, addMediaToGroup } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -31,6 +31,34 @@ export async function handleGroupsRoute(req, res) {
   const mediaMatch = requestUrl.pathname.match(
     /^\/api\/groups\/(\d+)\/media$/,
   );
+
+    if (requestUrl.pathname === '/api/groups/mine') {
+    if (req.method !== 'GET') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'GET' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    try {
+      const groups = await getUserGroups(req.user.id);
+      sendJson(res, 200, groups);
+    } catch (error) {
+      console.error('Fetching user groups failed:', error);
+      sendJson(res, 500, {
+        error: 'User groups could not be loaded',
+      });
+    }
+
+    return true;
+  }
 
   if (mediaMatch) {
     if (req.method !== 'POST') {

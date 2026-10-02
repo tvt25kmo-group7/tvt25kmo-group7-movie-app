@@ -85,4 +85,21 @@ async function getGroupMediaByGroupId(groupId) {
   return result.rows;
 }
 
-export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId };
+async function getGroupsByUserId(userId) {
+  const result = await database.query(
+    `SELECT
+      groups.id,
+      groups.name
+    FROM groups
+    JOIN group_members
+      ON group_members.group_id = groups.id
+    WHERE group_members.user_id = $1
+      AND group_members.status = 'member'
+    ORDER BY groups.name ASC`,
+    [userId],
+  );
+
+  return result.rows;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId };
