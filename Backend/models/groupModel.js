@@ -102,4 +102,23 @@ async function getGroupsByUserId(userId) {
   return result.rows;
 }
 
-export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId };
+async function insertJoinRequest(groupId, userId) {
+  const result = await database.query(
+    `INSERT INTO group_members (
+      group_id,
+      user_id,
+      status
+    )
+    VALUES ($1, $2, 'pending')
+    RETURNING
+      group_id AS "groupId",
+      user_id AS "userId",
+      status,
+      joined_at AS "requestedAt"`,
+    [groupId, userId],
+  );
+
+  return result.rows[0];
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest };

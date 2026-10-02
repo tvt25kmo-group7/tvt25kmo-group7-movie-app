@@ -10,7 +10,7 @@ import {
   authenticateOptionalRequest,
 } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, requestGroupMembership } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -31,8 +31,11 @@ export async function handleGroupsRoute(req, res) {
   const mediaMatch = requestUrl.pathname.match(
     /^\/api\/groups\/(\d+)\/media$/,
   );
+  const joinRequestMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/join-requests$/,
+  );
 
-    if (requestUrl.pathname === '/api/groups/mine') {
+  if (requestUrl.pathname === '/api/groups/mine') {
     if (req.method !== 'GET') {
       sendJson(
         res,
@@ -54,6 +57,73 @@ export async function handleGroupsRoute(req, res) {
       console.error('Fetching user groups failed:', error);
       sendJson(res, 500, {
         error: 'User groups could not be loaded',
+      });
+    }
+
+    return true;
+  }
+
+  if (joinRequestMatch) {
+    if (req.method !== 'POST') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'POST' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res)) {
+      return true;
+    }
+
+    const groupId = Number(joinRequestMatch[1]);
+
+    try {
+      const result = await requestGroupMembership(
+        groupId,
+        req.user.id,
+      );
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'alreadyMember') {
+        sendJson(res, 409, {
+          error: 'You are already a member of this group',
+        });
+        return true;
+      }
+
+      if (result.error === 'requestPending') {
+        sendJson(res, 409, {
+          error: 'Your request to join this group is already pending',
+        });
+        return true;
+      }
+
+      if (result.error === 'alreadyInvited') {
+        sendJson(res, 409, {
+          error: 'You already have an invitation to this group',
+        });
+        return true;
+      }
+
+      sendJson(res, 201, result.request);
+    } catch (error) {
+      if (error.code === '23505') {
+        sendJson(res, 409, {
+          error: 'A membership or join request already exists',
+        });
+        return true;
+      }
+
+      console.error('Creating group join request failed:', error);
+      sendJson(res, 500, {
+        error: 'Group join request could not be created',
       });
     }
 
