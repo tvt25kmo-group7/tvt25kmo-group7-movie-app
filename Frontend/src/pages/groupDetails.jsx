@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import MovieCard from '../components/movieCard';
 
 import './groupDetails.css';
 
@@ -16,6 +17,7 @@ export default function GroupDetails() {
     if (authLoading) {
       return;
     }
+
     async function fetchGroup() {
       try {
         const response =
@@ -39,6 +41,7 @@ export default function GroupDetails() {
         setLoading(false);
       }
     }
+
     fetchGroup();
   }, [id, user, authLoading, authenticatedFetch]);
 
@@ -73,6 +76,30 @@ export default function GroupDetails() {
     );
   }
 
+  const media = Array.isArray(group.media) ? group.media : [];
+
+  const playlist = (
+    <section className="group-playlist">
+      <h2>Shared Movies and Series</h2>
+
+      {media.length === 0 ? (
+        <p>No movies or series have been shared with this group yet.</p>
+      ) : (
+        <div className="group-playlist__grid">
+          {media.map((item) => (
+            <MovieCard
+              key={`${item.mediaType}-${item.tmdbId}`}
+              movieId={item.tmdbId}
+              mediaType={item.mediaType}
+              title={item.title}
+              posterPath={item.posterPath}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+
   if (!group.isOwner && group.membershipStatus === 'member') {
     return (
       <section className="group-details-page">
@@ -86,6 +113,8 @@ export default function GroupDetails() {
             <h3>Current Members</h3>
           </section>
         </aside>
+
+        {playlist}
       </section>
     );
   }
@@ -108,6 +137,8 @@ export default function GroupDetails() {
             <h3>Current Members</h3>
           </section>
         </aside>
+
+        {playlist}
       </section>
     );
   }

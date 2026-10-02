@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId } from '../models/groupModel.js';
 import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
@@ -32,11 +32,22 @@ async function getGroups() {
   return getAllGroups(); 
 }
 
+async function getUserGroups(userId) {
+  return getGroupsByUserId(userId);
+}
+
 async function getGroup(groupId, userId = null) {
   const group = await getGroupById(groupId, userId);
 
   if (!group) {
     return null;
+  }
+
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return {
+      ...group,
+      media: [],
+    };
   }
 
   const storedMedia = await getGroupMediaByGroupId(groupId);
@@ -89,4 +100,4 @@ async function addMediaToGroup(groupId, tmdbId, mediaType, userId) {
   };
 }
 
-export { createGroup, getGroups, getGroup, addMediaToGroup };
+export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups };

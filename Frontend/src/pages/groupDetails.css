@@ -61,7 +61,7 @@
   min-width: 0;
 }
 
-.group-playlist .movie-grid {
+.group-playlist__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
