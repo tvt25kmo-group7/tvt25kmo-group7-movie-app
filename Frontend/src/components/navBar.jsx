@@ -68,7 +68,7 @@ export default function Navbar() {
               Groups
             </Link>
 
-            <Link to={`/favorites/${user?.id}`} onClick={handleProtectedClick}>
+            <Link to={`/favorites`} onClick={handleProtectedClick}>
               Favorites
             </Link>
 

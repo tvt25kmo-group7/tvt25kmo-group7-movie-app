@@ -19,11 +19,13 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: DB_USER,DB_PASSWORD,DB_NAME,TMDB_API_TOKEN
+          envs: DB_USER,DB_PASSWORD,DB_NAME,TMDB_API_TOKEN,JWT_SECRET_KEY,JWT_REFRESH_SECRET
           script: |
             set -e
 
@@ -49,20 +51,18 @@ jobs:
             fi
 
             
+            docker network create movie-net 2>/dev/null || true
+
             docker rm -f movie-backend movie-frontend 2>/dev/null || true
             docker build -t movie-backend ./Backend
-            docker run -d \
-              --name movie-backend \
-              -p 5000:5000 \
-              -e TMDB_API_TOKEN="$TMDB_API_TOKEN" \
-              movie-backend
             docker build -t movie-frontend ./Frontend
-            docker run -d --name movie-frontend -p 5173:5173 movie-frontend
+
             docker volume create postgres_movie_data >/dev/null
             if docker container inspect movie-db >/dev/null 2>&1; then
               docker start movie-db >/dev/null 2>&1 || true
             else
               docker run -d --name movie-db \
+                --network movie-net \
                 -e POSTGRES_USER="$DB_USER" \
                 -e POSTGRES_PASSWORD="$DB_PASSWORD" \
                 -e POSTGRES_DB="$DB_NAME" \
@@ -70,6 +70,28 @@ jobs:
                 -v postgres_movie_data:/var/lib/postgresql/data \
                 postgres:16
             fi
+            docker network connect movie-net movie-db 2>/dev/null || true
+
+            docker run -d \
+              --name movie-backend \
+              --network movie-net \
+              -p 5000:5000 \
+              -e TMDB_API_TOKEN="$TMDB_API_TOKEN" \
+              -e DB_HOST=movie-db \
+              -e DB_PORT=5432 \
+              -e DB_NAME="$DB_NAME" \
+              -e DB_USER="$DB_USER" \
+              -e DB_PASSWORD="$DB_PASSWORD" \
+              -e JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+              -e JWT_REFRESH_SECRET="$JWT_REFRESH_SECRET" \
+              -e CLIENT_ORIGIN="http://${{ secrets.SERVER_HOST }}:5173" \
+              movie-backend
+
+            docker run -d --name movie-frontend \
+              --network movie-net \
+              -p 5173:5173 \
+              -e API_PROXY_TARGET=http://movie-backend:5000 \
+              movie-frontend
 
             echo "Waiting for database to accept connections..."
             for i in $(seq 1 30); do

@@ -4,6 +4,7 @@
 
 import { getFavByUserId, addFavByUserId } from "../models/favoriteModel.js";
 import { getMoviesById } from "./tmdbService.js";
+import { findUserByShareToken } from "../models/userModel.js";
 
 
 async function getUserFavorites(userId) {
@@ -49,4 +50,8 @@ async function addFavorite(userId, tmdbId, mediaType) {
   };
 }
 
-export default { getUserFavorites, addFavorite };
+async function getUserByShareToken(token) {
+  return findUserByShareToken(token);
+}
+
+export default { getUserFavorites, addFavorite, getUserByShareToken };

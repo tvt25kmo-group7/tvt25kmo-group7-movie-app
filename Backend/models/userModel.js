@@ -1,4 +1,5 @@
 import { database } from '../services/database.js';
+import {randomUUID} from "node:crypto";
 
 async function findUserByEmail(email) {
   const result = await database.query(
@@ -118,6 +119,67 @@ async function deleteUserById(userId, pool) {
   }
 }
 
+async function getOrCreateShareToken(userId) {
+  const existing = await database.query(
+    `
+      SELECT favorites_share_token
+      FROM users
+      WHERE id = $1
+    `,
+    [userId],
+  );
+
+  if (!existing.rows[0]) {
+    return null;
+  }
+
+  if (existing.rows[0].favorites_share_token) {
+    return existing.rows[0].favorites_share_token;
+  }
+
+  const token = randomUUID();
+
+  const result = await database.query(
+    `
+      UPDATE users
+      SET favorites_share_token = $1
+      WHERE id = $2
+      RETURNING favorites_share_token
+    `,
+    [token, userId],
+  );
+
+  return result.rows[0]?.favorites_share_token ?? null;
+}
+
+async function findUserByShareToken(token) {
+  const result = await database.query(
+    `
+      SELECT id, username, favorites_public
+      FROM users
+      WHERE favorites_share_token = $1
+    `,
+    [token],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+async function getAllSharedFavoriteUsers() {
+  const result = await database.query(
+    `
+      SELECT username, favorites_share_token
+      FROM users
+      WHERE favorites_share_token IS NOT NULL
+        AND favorites_public = TRUE
+      ORDER BY username
+    `,
+  );
+
+  return result.rows;
+}
+
+
 export {
   findUserByEmail,
   findUserByUsername,
@@ -126,5 +188,8 @@ export {
   findUserByRefreshToken,
   clearRefreshToken,
   findUserById,
-  deleteUserById
+  deleteUserById,
+  getOrCreateShareToken,
+  findUserByShareToken,
+  getAllSharedFavoriteUsers,
 };

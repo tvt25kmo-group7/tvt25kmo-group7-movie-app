@@ -48,4 +48,41 @@ async function getGroupById(groupId, userId = null) {
   return result.rows[0] ?? null;
 }
 
-export { insertGroup, insertGroupMember, getAllGroups, getGroupById };
+async function insertGroupMedia(groupId, tmdbId, mediaType, addedBy) {
+  const result = await database.query(
+    `INSERT INTO group_media (
+      group_id,
+      tmdb_id,
+      media_type,
+      added_by
+    )
+    VALUES ($1, $2, $3, $4)
+    RETURNING
+      group_id AS "groupId",
+      tmdb_id AS "tmdbId",
+      media_type AS "mediaType",
+      added_by AS "addedBy",
+      created_at AS "createdAt"`,
+    [groupId, tmdbId, mediaType, addedBy],
+  );
+
+  return result.rows[0];
+}
+
+async function getGroupMediaByGroupId(groupId) {
+  const result = await database.query(
+    `SELECT
+      tmdb_id AS "tmdbId",
+      media_type AS "mediaType",
+      added_by AS "addedBy",
+      created_at AS "createdAt"
+    FROM group_media
+    WHERE group_id = $1
+    ORDER BY created_at DESC`,
+    [groupId],
+  );
+
+  return result.rows;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId };
