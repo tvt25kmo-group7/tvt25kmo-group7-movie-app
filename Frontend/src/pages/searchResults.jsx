@@ -91,7 +91,7 @@ export default function SearchResults() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [criteriaError, setCriteriaError] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     setSearchQuery(query);
@@ -173,44 +173,29 @@ export default function SearchResults() {
     fetchSearchResults();
   }, [query, genre, year, yearFrom, yearTo]);
 
-  const handleNameSearch = (event) => {
+
+  const handleSearch = (event) => {
     event.preventDefault();
 
     const trimmedQuery = searchQuery.trim();
-
-    if (!trimmedQuery) {
-      setError('Enter a movie or series name.');
-      return;
-    }
-
-    setError('');
-    setCriteriaError('');
-
-    setSearchParams({
-      query: trimmedQuery
-    });
-  };
-
-  const handleCriteriaSearch = (event) => {
-    event.preventDefault();
-
     const parsedYears = parseYearRange(selectedYearRange);
 
     setError('');
-    setCriteriaError('');
+    setSearchError('');
 
     if (
+      !trimmedQuery &&
       !selectedGenre &&
       !selectedYearRange.trim()
     ) {
-      setCriteriaError(
-        'Select a genre or enter a year.'
+      setSearchError(
+        'Enter a name or select search criteria.'
       );
       return;
     }
 
     if (!parsedYears) {
-      setCriteriaError(
+      setSearchError(
         'Enter a year like 2008 or a range like 2000-2010.'
       );
       return;
@@ -218,11 +203,8 @@ export default function SearchResults() {
 
     const newSearchParams = new URLSearchParams();
 
-    if (searchQuery.trim()) {
-      newSearchParams.set(
-        'query',
-        searchQuery.trim()
-      );
+    if (trimmedQuery) {
+      newSearchParams.set('query', trimmedQuery);
     }
 
     if (selectedGenre) {
@@ -250,90 +232,85 @@ export default function SearchResults() {
     setSearchParams(newSearchParams);
   };
 
+
   return (
     <section className="search-results">
       <h1>Search Results</h1>
 
       <form
-        className="search-bar"
-        onSubmit={handleNameSearch}
-      >
-        <label
-          htmlFor="results-search"
-          className="visually-hidden"
-        >
-          Search movies and series
-        </label>
-
-        <input
-          id="results-search"
-          type="search"
-          placeholder="Search movies and series..."
-          value={searchQuery}
-          onChange={(event) =>
-            setSearchQuery(event.target.value)
-          }
-        />
-
-        <button type="submit" disabled={loading}>
-          {loading ? 'Searching...' : 'Search'}
-        </button>
-      </form>
-
-      <form
-        className="criteria-search"
-        onSubmit={handleCriteriaSearch}
-      >
-        <div>
-          <label htmlFor="genre">Genre</label>
-
-          <select
-            id="genre"
-            value={selectedGenre}
-            onChange={(event) =>
-              setSelectedGenre(event.target.value)
-            }
+        onSubmit={handleSearch}>
+        <div className="search-bar">
+          <label
+            htmlFor="results-search"
+            className="visually-hidden"
           >
-            <option value="">Any genre</option>
-
-            {genres.map((genreOption) => (
-              <option
-                key={genreOption.id}
-                value={genreOption.id}
-              >
-                {genreOption.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="year-range">
-            Year or year range
+            Search movies and series
           </label>
 
           <input
-            id="year-range"
-            type="text"
-            placeholder="2008 or 2000-2010"
-            value={selectedYearRange}
+            id="results-search"
+            type="search"
+            placeholder="Search movies and series..."
+            value={searchQuery}
             onChange={(event) =>
-              setSelectedYearRange(event.target.value)
+              setSearchQuery(event.target.value)
             }
           />
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Searching...' : 'Search'}
+          </button>
         </div>
 
-        <button type="submit" disabled={loading}>
-          Search by criteria
-        </button>
+        <div className="criteria-search">
+          <div>
+            <label htmlFor="genre">Genre</label>
+
+            <select
+              id="genre"
+              value={selectedGenre}
+              onChange={(event) =>
+                setSelectedGenre(event.target.value)
+              }
+            >
+              <option value="">Any genre</option>
+
+              {genres.map((genreOption) => (
+                <option
+                  key={genreOption.id}
+                  value={genreOption.id}
+                >
+                  {genreOption.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="year-range">
+              Year or year range
+            </label>
+
+            <input
+              id="year-range"
+              type="text"
+              placeholder="2008 or 2000-2010"
+              value={selectedYearRange}
+              onChange={(event) =>
+                setSelectedYearRange(event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        {searchError && <p>{searchError}</p>}
       </form>
 
-      {criteriaError && <p>{criteriaError}</p>}
       {error && <p>{error}</p>}
 
       {!loading &&
         !error &&
-        !criteriaError &&
+        !searchError &&
         (query || genre || year || yearFrom || yearTo) &&
         movies.length === 0 && (
           <p>No movies or series found.</p>
