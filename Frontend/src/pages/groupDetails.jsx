@@ -79,6 +79,34 @@ export default function GroupDetails() {
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
           <p>You are a member of this group</p>
+          <button type="button" className="button-danger">
+            Leave Group
+          </button>
+          <section>
+            <h3>Current Members</h3>
+          </section>
+        </aside>
+      </section>
+    );
+  }
+
+  if (group.isOwner) {
+    return (
+      <section className="group-details-page">
+        <aside className="group-details-sidebar">
+          <h1>{group.name}</h1>
+          <p>You are the creator of this group</p>
+          <button type="button" className="button-danger">
+            Delete Group
+          </button>
+          {group.isOwner && (
+            <section>
+              <h3>Join Requests</h3>
+            </section>
+          )}
+          <section>
+            <h3>Current Members</h3>
+          </section>
         </aside>
       </section>
     );

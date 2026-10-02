@@ -10,10 +10,12 @@ import { handleReviewsRoutes } from './routes/reviewsRoutes.js';
 import { handleGroupsRoute } from './routes/groupsRoutes.js';
 import { database } from './services/database.js';
 
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+
 function createServer(pool = database) {
   return http.createServer(async (req, res) => {
     try {
-      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+      res.setHeader('Access-Control-Allow-Origin', CLIENT_ORIGIN);
       res.setHeader(
         'Access-Control-Allow-Methods',
         'GET, POST, PUT, PATCH, DELETE, OPTIONS',

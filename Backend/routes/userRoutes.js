@@ -1,6 +1,6 @@
 import { authenticateRequest } from '../auth/auth.js';
-import { loginUser,registerUser,refreshAccessToken } from '../services/authService.js';
-import { clearRefreshToken,findUserById, deleteUserById } from '../models/userModel.js';
+import { loginUser, registerUser, refreshAccessToken, getSharedFavoriteUsers } from '../services/authService.js';
+import { clearRefreshToken, findUserById, deleteUserById, getOrCreateShareToken,} from '../models/userModel.js';
 import { createToken } from '../auth/jwt.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -148,6 +148,14 @@ async function handleUserRoutes(req, res, pool) {
 
   if (url.pathname === '/api/users/register') {
     return handleRegisterRoute(req, res);
+  }
+
+  if (url.pathname === "/api/users/share-token") {
+  return handleShareToken(req, res);
+  }
+
+  if (url.pathname === "/api/users/shared-favorites") {
+  return handleSharedFavorites(req, res);
   }
 
   return false;
@@ -434,4 +442,84 @@ async function handleLogout(req, res) {
   }
 }
 
-export { handleUserRoutes, handleRegisterRoute };
+async function handleShareToken(req, res) {
+  if (!authenticateRequest(req, res)) {
+    return true;
+  }
+
+  try {
+    const token = await getOrCreateShareToken(req.user.id);
+
+    if (!token) {
+      sendJson(res, 500, {
+        error: "Unable to get share token",
+      });
+      return true;
+    }
+
+    if (req.method === "GET") {
+      sendJson(res, 200, {
+        username: req.user.username,
+        token,
+      });
+
+      return true;
+    }
+
+    if (req.method === "POST") {
+      sendJson(res, 200, {
+        token,
+      });
+
+      return true;
+    }
+
+    sendJson(
+      res,
+      405,
+      { error: "This action requires a GET or POST request",},
+      { Allow: "GET, POST",},
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Share token request failed:", error);
+
+    sendJson(res, 500, {
+      error: "Unable to get share token",
+    });
+
+    return true;
+  }
+}
+
+async function handleSharedFavorites(req, res) {
+  if (req.method !== 'GET') {
+    sendJson(
+      res,
+      405,
+      { error: 'This action requires a GET request' },
+      { Allow: 'GET' },
+    );
+
+    return true;
+  }
+
+  try {
+    const users = await getSharedFavoriteUsers();
+
+    sendJson(res, 200, users);
+
+    return true;
+  } catch (error) {
+    console.error('Shared favorites lookup failed:', error);
+
+    sendJson(res, 500, {
+      error: 'Unable to retrieve shared favorite lists',
+    });
+
+    return true;
+  }
+}
+
+export { handleUserRoutes, handleRegisterRoute, handleShareToken, handleSharedFavorites };

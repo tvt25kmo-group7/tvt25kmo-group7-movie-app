@@ -1,61 +1,120 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import { useAuth } from '../context/AuthContext';
 import './favorites.css';
 
 export default function Favorites() {
-  const { user, authLoading, authenticatedFetch } = useAuth();
-  const { userId } = useParams();
-  
+  const { user, authLoading, authenticatedFetch } = useAuth();  
+  const { token } = useParams();
+
   const [movies, setMovies] = useState([]);
+  const [ownerName, setOwnerName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (authLoading || !user?.token || !userId) {
-      return;
-    }
-    async function fetchFavoriteMovies() {
-      try {
-        const response = await authenticatedFetch(
-          `/api/favorites/${userId}`
-        );
-        if (!response.ok) {
-          throw new Error('Failed to fetch favorite movies');
-        }
+  const [shareLoading, setShareLoading] = useState(false); 
+  const [shareError, setShareError] = useState('');
+
+useEffect(() => { 
+  async function fetchFavoriteMovies() { 
+    try { 
+      setLoading(true); setError(''); 
+
+      if (token) { 
+        const [response, usersResponse] = await Promise.all([
+          fetch(`/api/favorites/${token}`),
+          fetch('/api/users/shared-favorites'),
+        ]);
+
+        if (!response.ok) { 
+          throw new Error('Failed to fetch shared favorite movies'); 
+        } 
+        
         const data = await response.json();
-        setMovies(data.results ?? []);
-      } catch (error) {
-        console.error(error);
-        setError('Could not load favorite movies');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchFavoriteMovies();
-  }, [authLoading, user?.token, userId, authenticatedFetch]);
+        if (usersResponse.ok) {
+          const users = await usersResponse.json();
+          const owner = users.find((sharedUser) => (
+            sharedUser.favorites_share_token === token
+          ));
+          setOwnerName(owner?.username ?? '');
+        }
 
-  if (authLoading) {
-    return <p>Loading...</p>;
-  }
+        setMovies(data.results ?? []); 
+        return; } 
 
-  if (!user?.token) {
-    return <Navigate to="/" replace />;
-  }
+        setOwnerName('');
+        
+        if (authLoading /*|| !user?.token*/) { 
+          return; 
+        } 
+        
+        const response = await authenticatedFetch('/api/favorites'); 
+        
+        if (!response.ok) { 
+          throw new Error('Failed to fetch favorite movies'); 
+        } 
+        const data = await response.json(); 
+        setMovies(data.results ?? []); 
+      } catch (error) { 
+        console.error(error); 
+        setError( token ? 'Could not load shared favorite movies' : 'Could not load favorite movies' ); 
+      } finally { 
+        setLoading(false); 
+      } 
+    } 
+    fetchFavoriteMovies(); 
+  }, [token, authLoading, user?.token, authenticatedFetch]);
 
+  const handleShareList = async () => { 
+    try { 
+      setShareLoading(true); 
+      setShareError(''); 
+      
+      const response = await authenticatedFetch( 
+        '/api/users/share-token', 
+        { method: 'POST',         },
+       ); 
+       
+       if (!response.ok) { 
+        throw new Error('Failed to create share token'); 
+      } 
+      
+    await response.json();
+    } catch (error) { 
+      console.error(error); 
+      setShareError('Could not create shared favorites link'); 
+    } finally { 
+      setShareLoading(false); 
+    } 
+  };
 
   return (
     <section className="favorites-page">
       <div className="favorites-header">
         <div>
-          <h1>Favorites</h1>
-        
+          <h1>
+            {token
+              ? ownerName ? `${ownerName}'s Favorites` : 'Favorites'
+              : 'My Favorites'}
+          </h1>
+        </div>
 
-        <button type="button">
-          Share List
-        </button>
-      </div>
+        {!token && (
+          <button
+            type="button"
+            onClick={handleShareList}
+            disabled={shareLoading}
+          >
+            {shareLoading ? 'Creating...' : 'Share List'}
+          </button>
+        )}
+
+          {!token && shareError && (
+            <p>{shareError}</p>
+          )}
+   
+        </div>
 
       <div className="movie-grid">
         {loading && <p>Loading favorite movies...</p>}
@@ -77,7 +136,6 @@ export default function Favorites() {
           ))}
           </div>
         )}
-      </div>
       </div>
     </section>
   );
