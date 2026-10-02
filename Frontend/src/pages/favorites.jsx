@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import { useAuth } from '../context/AuthContext';
 import './favorites.css';
 
 export default function Favorites() {
-  const { user, authenticatedFetch } = useAuth();
+  const { user, authLoading, authenticatedFetch } = useAuth();
+  const { userId } = useParams();
   
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if(!user?.token) {
-      setError('You must be logged in to view your favorites.');
-      setLoading(false);
+    if (authLoading || !user?.token || !userId) {
       return;
     }
     async function fetchFavoriteMovies() {
       try {
         const response = await authenticatedFetch(
-          '/api/favorites'
+          `/api/favorites/${userId}`
         );
         if (!response.ok) {
           throw new Error('Failed to fetch favorite movies');
@@ -34,7 +34,16 @@ export default function Favorites() {
       }
     }
     fetchFavoriteMovies();
-  }, [user?.token, authenticatedFetch]);
+  }, [authLoading, user?.token, userId, authenticatedFetch]);
+
+  if (authLoading) {
+    return <p>Loading...</p>;
+  }
+
+  if (!user?.token) {
+    return <Navigate to="/" replace />;
+  }
+
 
   return (
     <section className="favorites-page">
@@ -73,4 +82,3 @@ export default function Favorites() {
     </section>
   );
 }
-        
