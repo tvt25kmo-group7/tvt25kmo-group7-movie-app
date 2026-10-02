@@ -9,18 +9,44 @@ export async function handleFavoriteRoutes(req, res) {
     `http://${req.headers.host || "localhost"}`,
   );
 
-  // GET /api/favorites/:userId
-  const userIdMatch = requestUrl.pathname.match(
-    /^\/api\/favorites\/(\d+)$/,
+  const favoritesMatch = requestUrl.pathname.match(
+    /^\/api\/favorites(?:\/([0-9a-f-]{36}))?$/i,
   );
 
-  // POST /api/favorites
-  const isFavoritesRoute =
-    requestUrl.pathname === "/api/favorites";
-
-  // Check if this request belongs to the favorites routes
-  if (!userIdMatch && !isFavoritesRoute) {
+  if (!favoritesMatch) {
     return false;
+  }
+
+  const token = favoritesMatch[1];
+
+  if (req.method === "GET" && token) {
+    try {
+      const owner =
+        await favoriteService.getUserByShareToken(token);
+
+      if (!owner || !owner.favorites_public) {
+        sendJson(res, 404, {
+          error: "Shared favorites not found",
+        });
+        return true;
+      }
+
+      const favorites =
+        await favoriteService.getUserFavorites(owner.id);
+
+      sendJson(res, 200, favorites);
+    } catch (error) {
+      console.error(
+        "Get shared favorites failed:",
+        error.message,
+      );
+
+      sendJson(res, 500, {
+        error: "Failed to fetch shared favorites",
+      });
+    }
+
+    return true;
   }
 
   // User must be logged in to use the favorites routes
@@ -28,12 +54,12 @@ export async function handleFavoriteRoutes(req, res) {
     return true;
   }
 
-  // GET /api/favorites/:userId
-  if (req.method === "GET" && userIdMatch) {
-    const userId = Number(userIdMatch[1]);
 
+  // GET /api/favorites/:userId
+  if (req.method === "GET") {
     try {
-      const favorites = await favoriteService.getUserFavorites(userId);
+      const favorites =
+        await favoriteService.getUserFavorites(req.user.id);
 
       sendJson(res, 200, favorites);
     } catch (error) {
@@ -45,10 +71,10 @@ export async function handleFavoriteRoutes(req, res) {
     }
 
     return true;
-  }
-
+    }
+    
   // POST /api/favorites
-  if (req.method === "POST" && isFavoritesRoute) {
+  if (req.method === "POST" /*&& isFavoritesRoute*/) {
     try {
       const { tmdbId, mediaType } = await readJsonBody(req);
 
@@ -114,6 +140,7 @@ export async function handleFavoriteRoutes(req, res) {
 
   return true;
 }
+
 
 // Reads JSON data from the request body
 function readJsonBody(req) {
