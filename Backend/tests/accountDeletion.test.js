@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 import { createServer } from '../app.js';
 import { createToken } from '../auth/jwt.js';
-import { deleteUserById } from '../services/userService.js';
+import { deleteUserById } from '../models/userModel.js';
 
 function createTestPool({ rowCount = 1, deleteError = null } = {}) {
   const queries = [];
@@ -43,7 +43,7 @@ function createTestPool({ rowCount = 1, deleteError = null } = {}) {
   };
 }
 
-describe('deleteUserById service', () => {
+describe('deleteUserById', () => {
   test('deletes the user and commits teh transaction', async () => {
     const { pool, queries, wasReleased } = createTestPool();
 

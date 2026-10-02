@@ -1,23 +1,129 @@
-//THis page is for favorite routes, to get the media by id and media type from TMDB API
-//This page is not tested yet, but it is used in the favorite routes to get the media 
-// by id and media type from TMDB API and also to add the media to the favorites table in the database.
 import { authenticateRequest } from "../auth/auth.js";
 import favoriteService from "../services/favoriteService.js";
+import { sendJson } from "../helpers/sendJson.js";
 
-function sendJson(res, statusCode, body, headers = {}) {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    ...headers,
-  });
-  res.end(JSON.stringify(body));
+// Handles the /api/favorites routes
+export async function handleFavoriteRoutes(req, res) {
+  const requestUrl = new URL(
+    req.url,
+    `http://${req.headers.host || "localhost"}`,
+  );
+
+  // GET /api/favorites/:userId
+  const userIdMatch = requestUrl.pathname.match(
+    /^\/api\/favorites\/(\d+)$/,
+  );
+
+  // POST /api/favorites
+  const isFavoritesRoute =
+    requestUrl.pathname === "/api/favorites";
+
+  // Check if this request belongs to the favorites routes
+  if (!userIdMatch && !isFavoritesRoute) {
+    return false;
+  }
+
+  // User must be logged in to use the favorites routes
+  if (!authenticateRequest(req, res)) {
+    return true;
+  }
+
+  // GET /api/favorites/:userId
+  if (req.method === "GET" && userIdMatch) {
+    const userId = Number(userIdMatch[1]);
+
+    try {
+      const favorites = await favoriteService.getUserFavorites(userId);
+
+      sendJson(res, 200, favorites);
+    } catch (error) {
+      console.error("Get favorites failed:", error.message);
+
+      sendJson(res, 500, {
+        error: "Failed to fetch favorites",
+      });
+    }
+
+    return true;
+  }
+
+  // POST /api/favorites
+  if (req.method === "POST" && isFavoritesRoute) {
+    try {
+      const { tmdbId, mediaType } = await readJsonBody(req);
+
+      const parsedTmdbId = Number(tmdbId);
+
+      // Check that tmdbId is an integer
+      if (!Number.isInteger(parsedTmdbId)) {
+        sendJson(res, 400, {
+          error: "tmdbId must be an integer",
+        });
+
+        return true;
+      }
+
+      // Check that mediaType is movie or tv
+      if (!["movie", "tv"].includes(mediaType)) {
+        sendJson(res, 400, {
+          error: "mediaType must be movie or tv",
+        });
+
+        return true;
+      }
+
+      // Add favorite for the logged-in user
+      const favorite = await favoriteService.addFavorite(
+        req.user.id,
+        parsedTmdbId,
+        mediaType,
+      );
+
+      // Favorite already exists
+      if (favorite.alreadyExists) {
+        sendJson(res, 409, {
+          message: "Favorite already exists",
+        });
+
+        return true;
+      }
+
+      sendJson(res, 201, favorite);
+    } catch (error) {
+      console.error("Add favorite failed:", error);
+
+      sendJson(res, 500, {
+        error: "Failed to add favorite",
+      });
+    }
+
+    return true;
+  }
+
+  // Other HTTP methods are not allowed
+  sendJson(
+    res,
+    405,
+    {
+      error: "Method not allowed",
+    },
+    {
+      Allow: "GET, POST",
+    },
+  );
+
+  return true;
 }
 
+// Reads JSON data from the request body
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
+
     req.on("data", (chunk) => {
       data += chunk;
     });
+
     req.on("end", () => {
       try {
         resolve(data ? JSON.parse(data) : {});
@@ -25,82 +131,7 @@ function readJsonBody(req) {
         reject(new Error("Invalid JSON"));
       }
     });
+
     req.on("error", reject);
   });
 }
-
-
-console.log("Before favorites");
-
-
-
-
-
-export async function handleFavoriteRoutes(req, res) {
-  const requestUrl = new URL(
-    req.url,
-    `http://${req.headers.host || "localhost"}`,
-  );
-
-  if (requestUrl.pathname !== "/api/favorites") {
-    return false;
-  }
-
-  if (!authenticateRequest(req, res)) {
-    return true;
-  }
-
-  if (req.method === "GET") {
-    try {
-      const favorites = await favoriteService.getUserFavorites(req.user.id);
-      sendJson(res, 200, favorites);
-    } catch (error) {
-      console.error("Get favorites failed:", error.message);
-      sendJson(res, 500, { error: "Failed to fetch favorites" });
-    }
-    return true;
-  }
-
-  if (req.method === "POST") {
-    try {
-      const { tmdbId, mediaType } = await readJsonBody(req);
-
-      if (!Number.isInteger(tmdbId)) {
-        sendJson(res, 400, {
-          error: "tmdbId must be an integer",
-        });
-        return true;
-      }
-
-      if (!["movie", "tv"].includes(mediaType)) {
-        sendJson(res, 400, {
-          error: "mediaType must be movie or tv",
-        });
-        return true;
-      }
-
-      const favorite = await favoriteService.addFavorite(
-        req.user.id,
-        tmdbId,
-        mediaType,
-      );
-
-      if (favorite.alreadyExists) {
-        sendJson(res, 409, {
-          message: "Favorite already exists",
-        });
-        return true;
-      }
-
-      sendJson(res, 201, favorite);
-    } catch (error) {
-      console.error("Add favorite failed:", error.message);
-      sendJson(res, 500, { error: "Failed to add favorite" });
-    }
-    return true;
-  }
-  sendJson(res, 405, { error: "Method not allowed" }, { Allow: "GET, POST" });
-  return true;
-}
-
-console.log("After favorites");  

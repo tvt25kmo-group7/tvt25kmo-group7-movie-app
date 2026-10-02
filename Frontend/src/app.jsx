@@ -21,9 +21,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<SearchResults />} />
-          <Route path="/movie/:id" element={<MovieDetails />} />
+          <Route path="/:mediaType/:movieId" element={<MovieDetails />} />
           <Route path="/groups" element={<Groups />} />
-          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/favorites/:userId" element={<Favorites />} />
           <Route path="/groups/:id" element={<GroupDetails />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />

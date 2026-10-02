@@ -1,4 +1,6 @@
-import { getReviewsByMedia, postCreateReview} from "../models/reviewsModel.js";
+//USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
+
+import { getReviewsByMedia, getReviewsByUser, postCreateReview} from "../models/reviewsModel.js";
 
 // Validates the media reference and fetches its reviews with reviewer info
 async function getMediaReviews(mediaType, tmdbId) {
@@ -12,6 +14,15 @@ async function getMediaReviews(mediaType, tmdbId) {
   }
 
   return getReviewsByMedia(mediaType, tmdbId);
+}
+
+// Validates the user reference and fetches every review that user wrote
+async function getUserReviews(userId) {
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("User ID must be a positive integer");
+  }
+
+  return getReviewsByUser(userId);
 }
 
 
@@ -34,12 +45,19 @@ async function createReview(userId, mediaType, tmdbId, rating, reviewText){
   }
 
 
-  if (typeof reviewText !== "string" || reviewText.trim() === "") {
-    throw new Error("Review text must be a non-empty string");
+  const normalizedReviewText = reviewText ?? "";
+  if (typeof normalizedReviewText !== "string") {
+    throw new Error("Review text must be a string");
   }
-  if (reviewText.length > 1000) {
+  if (normalizedReviewText.length > 1000) {
     throw new Error("Review text must not exceed 1000 characters");
   }
-  return postCreateReview(userId, mediaType, tmdbId, rating, reviewText);
+  return postCreateReview(
+    userId,
+    mediaType,
+    tmdbId,
+    rating,
+    normalizedReviewText.trim(),
+  );
 }
-export { getMediaReviews, createReview };
+export { getMediaReviews, getUserReviews, createReview };

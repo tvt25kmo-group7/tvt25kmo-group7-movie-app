@@ -35,6 +35,13 @@
   border: 1px solid var(--color-border);
 }
 
+.navbar__links .navbar__favorites {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
 .navbar__toggle {
   display: none;
   color: var(--color-text);

@@ -1,4 +1,5 @@
-import { getMediaReviews, createReview } from "../services/reviewService.js";
+//USERS CANT REMODEL THEIR REVIEWS OR DELETE THEM. HA HA HA SCREW YOU
+import { getMediaReviews, getUserReviews, createReview } from "../services/reviewService.js";
 import { authenticateRequest } from "../auth/auth.js";
 
 
@@ -27,9 +28,24 @@ function readJsonBody(req) {
   });
 }
 
-
+//get mtehod 
 export async function handleReviewsRoutes(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+  // Own reviews are looked up from the authenticated token, never from a client-supplied ID
+  if (url.pathname === "/api/reviews/me" && req.method === "GET") {
+    if (!authenticateRequest(req, res)) {
+      return true;
+    }
+
+    try {
+      const reviews = await getUserReviews(req.user.id);
+      sendJson(res, 200, reviews);
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
+    return true;
+  }
 
   if (url.pathname !== "/api/reviews") {
     return false;
@@ -55,8 +71,7 @@ export async function handleReviewsRoutes(req, res) {
 
 
 
-
-  //post method validation (only registered member is allowed to create reviews )
+  //post method. registered members are allowed to use
   if (req.method === "POST") {
     if (!authenticateRequest(req, res)) {
       return true;
@@ -67,7 +82,6 @@ export async function handleReviewsRoutes(req, res) {
       const { mediaType, rating, reviewText } = body;
       const tmdbId = Number(body.tmdbId);
 
-      // createReview does the real validation of rating/text/mediaType/tmdbId in reviewsService.js
       const review = await createReview(
         req.user.id,
         mediaType,
@@ -77,7 +91,6 @@ export async function handleReviewsRoutes(req, res) {
       );
       sendJson(res, 201, review);
     } catch (error) {
-      // a duplicate review hits Postgres error code 23505
       if (error.code === "23505") {
         sendJson(res, 409, { error: "You already reviewed this title" });
       } else {
@@ -87,7 +100,6 @@ export async function handleReviewsRoutes(req, res) {
     return true;
   }
 
-  // Any other method on this path is unsupported
   sendJson(
     res,
     405,

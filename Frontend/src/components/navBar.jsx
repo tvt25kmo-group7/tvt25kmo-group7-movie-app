@@ -7,14 +7,23 @@ import LoginModal from './loginModal';
 import RegisterModal from './registerModal';
 
 export default function Navbar() {
-   const { user, logout } = useAuth();
-   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenu() {
     setMenuOpen(false);
+  }
+
+  function handleProtectedClick(event) {
+    closeMenu();
+    if (user?.token) {
+      return;
+    }
+    event.preventDefault();
+    setActiveModal('login');
   }
 
   async function handleLogout() {
@@ -28,15 +37,11 @@ export default function Navbar() {
     navigate('/');
   }
 
- return (
+  return (
     <>
       <nav className="navbar">
         <div className="navbar__content">
-          <Link
-            className="navbar__logo"
-            to="/"
-            onClick={closeMenu}
-          >
+          <Link className="navbar__logo" to="/" onClick={closeMenu}>
             Movie App
           </Link>
 
@@ -59,15 +64,15 @@ export default function Navbar() {
               Home
             </Link>
 
-            <Link to="/groups" onClick={closeMenu}>
+            <Link to={'/groups'} onClick={closeMenu}>
               Groups
             </Link>
 
-            <Link to="/favorites" onClick={closeMenu}>
+            <Link to={`/favorites/${user?.id}`} onClick={handleProtectedClick}>
               Favorites
             </Link>
 
-            {user ? (
+            {user ?
               <>
                 <Link to="/profile" onClick={closeMenu}>
                   {user.username}
@@ -81,8 +86,7 @@ export default function Navbar() {
                   Logout
                 </button>
               </>
-            ) : (
-              <button
+            : <button
                 type="button"
                 className="button-secondary"
                 onClick={() => {
@@ -92,7 +96,7 @@ export default function Navbar() {
               >
                 Login
               </button>
-            )}
+            }
           </div>
         </div>
       </nav>
@@ -112,4 +116,4 @@ export default function Navbar() {
       )}
     </>
   );
-} 
+}

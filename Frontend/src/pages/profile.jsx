@@ -87,27 +87,25 @@ export default function Profile() {
           <h1>{account?.username ?? user?.username ?? 'Profile'}</h1>
           <p>@{account?.username ?? user?.username ?? 'user'}</p>
         </div>
-
-        <button type="button" className="button-primary">
-          Logout
-        </button>
       </div>
-
       <div className="profile-layout">
         <div className="profile-left">
           <section className="profile-card">
             <h2>Your movie life</h2>
 
             <div className="profile-stats">
+              
+              {/*REVIEWED BUTTON */}
               <button
                 type="button"
-                className={`profile-stat ${activeSection === 'rated' ? 'profile-stat--active' : ''}`}
-                onClick={() => setActiveSection('rated')}
+                className={`profile-stat ${activeSection === 'reviewed' ? 'profile-stat--active' : ''}`}
+                onClick={() => setActiveSection('reviewed')}
               >
                 <strong>15</strong>
-                <span>Rated titles</span>
+                <span>Reviewed titles</span>
               </button>
 
+              {/*FAVORITES BUTTON */}
               <button
                 type="button"
                 className={`profile-stat ${activeSection === 'favorites' ? 'profile-stat--active' : ''}`}
@@ -117,6 +115,7 @@ export default function Profile() {
                 <span>Favorites</span>
               </button>
 
+              {/*GROUP BUTTON */}
               <button
                 type="button"
                 className={`profile-stat ${activeSection === 'groups' ? 'profile-stat--active' : ''}`}
@@ -152,11 +151,12 @@ export default function Profile() {
           </section>
         </div>
 
+        {/* PROFILE REVIEWED, FAVORITES, AND GROUPS CONTENT */}
         <section className="profile-content-panel">
-          {activeSection === 'rated' && (
+          {activeSection === 'reviewed' && (
             <>
-              <h2>Rated titles</h2>
-              <p>Your rated movies and series will be shown here.</p>
+              <h2>Reviewed titles</h2>
+              <p>Your reviewed movies and series will be shown here.</p>
             </>
           )}
 
