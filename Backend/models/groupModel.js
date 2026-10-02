@@ -121,4 +121,57 @@ async function insertJoinRequest(groupId, userId) {
   return result.rows[0];
 }
 
-export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest };
+async function getPendingJoinRequests(groupId) {
+  const result = await database.query(
+    `SELECT
+      group_members.user_id AS "userId",
+      users.username,
+      group_members.joined_at AS "requestedAt"
+    FROM group_members
+    JOIN users
+      ON users.id = group_members.user_id
+    WHERE group_members.group_id = $1
+      AND group_members.status = 'pending'
+    ORDER BY group_members.joined_at ASC`,
+    [groupId],
+  );
+
+  return result.rows;
+}
+
+async function approveJoinRequest(groupId, userId) {
+  const result = await database.query(
+    `UPDATE group_members
+    SET
+      status = 'member',
+      joined_at = NOW()
+    WHERE group_id = $1
+      AND user_id = $2
+      AND status = 'pending'
+    RETURNING
+      group_id AS "groupId",
+      user_id AS "userId",
+      status,
+      joined_at AS "joinedAt"`,
+    [groupId, userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+async function rejectJoinRequest(groupId, userId) {
+  const result = await database.query(
+    `DELETE FROM group_members
+    WHERE group_id = $1
+      AND user_id = $2
+      AND status = 'pending'
+    RETURNING
+      group_id AS "groupId",
+      user_id AS "userId"`,
+    [groupId, userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest };

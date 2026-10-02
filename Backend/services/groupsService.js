@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest } from '../models/groupModel.js';
 import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
@@ -134,4 +134,88 @@ async function requestGroupMembership(groupId, userId) {
   };
 }
 
-export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership };
+async function getGroupJoinRequests(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const requests = await getPendingJoinRequests(groupId);
+
+  return {
+    requests,
+  };
+}
+
+async function approveGroupJoinRequest(groupId, requestedUserId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const membership = await approveJoinRequest(
+    groupId,
+    requestedUserId,
+  );
+
+  if (!membership) {
+    return {
+      error: 'requestNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function rejectGroupJoinRequest(groupId, requestedUserId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const request = await rejectJoinRequest(
+    groupId,
+    requestedUserId,
+  );
+
+  if (!request) {
+    return {
+      error: 'requestNotFound',
+    };
+  }
+
+  return {
+    request,
+  };
+}
+
+export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest };

@@ -12,8 +12,14 @@ export default function GroupDetails() {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
   const [joinRequestSubmitting, setJoinRequestSubmitting] = useState(false);
   const [joinRequestError, setJoinRequestError] = useState('');
+
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  const [joinRequestsError, setJoinRequestsError] = useState('');
+  const [joinRequestActionUserId, setJoinRequestActionUserId] = useState(null);
 
   useEffect(() => {
     if (authLoading) {
@@ -37,6 +43,38 @@ export default function GroupDetails() {
 
         const data = await response.json();
         setGroup(data);
+
+        if (data.isOwner) {
+          setJoinRequestsLoading(true);
+          setJoinRequestsError('');
+
+          try {
+            const joinRequestsResponse = await authenticatedFetch(
+              `/api/groups/${id}/join-requests`,
+            );
+
+            const joinRequestsData = await joinRequestsResponse
+              .json()
+              .catch(() => []);
+
+            if (!joinRequestsResponse.ok) {
+              throw new Error(
+                joinRequestsData.error ||
+                  'Join requests could not be loaded',
+              );
+            }
+
+            setJoinRequests(
+              Array.isArray(joinRequestsData) ? joinRequestsData : [],
+            );
+          } catch (requestError) {
+            setJoinRequestsError(requestError.message);
+          } finally {
+            setJoinRequestsLoading(false);
+          }
+        } else {
+          setJoinRequests([]);
+        }
       } catch (error) {
         setError(error.message);
       } finally {
@@ -75,6 +113,38 @@ export default function GroupDetails() {
       setJoinRequestError(error.message);
     } finally {
       setJoinRequestSubmitting(false);
+    }
+  };
+
+  const handleJoinRequestAction = async (requestedUserId, method) => {
+    setJoinRequestActionUserId(requestedUserId);
+    setJoinRequestsError('');
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/groups/${id}/join-requests/${requestedUserId}`,
+        {
+          method,
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Join request could not be managed',
+        );
+      }
+
+      setJoinRequests(currentRequests =>
+        currentRequests.filter(
+          request => request.userId !== requestedUserId,
+        ),
+      );
+    } catch (error) {
+      setJoinRequestsError(error.message);
+    } finally {
+      setJoinRequestActionUserId(null);
     }
   };
 
@@ -163,9 +233,11 @@ export default function GroupDetails() {
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
           <p>You are a member of this group</p>
+
           <button type="button" className="button-danger">
             Leave Group
           </button>
+
           <section>
             <h3>Current Members</h3>
           </section>
@@ -182,14 +254,67 @@ export default function GroupDetails() {
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
           <p>You are the creator of this group</p>
+
           <button type="button" className="button-danger">
             Delete Group
           </button>
-          {group.isOwner && (
-            <section>
-              <h3>Join Requests</h3>
-            </section>
-          )}
+
+          <section>
+            <h3>Join Requests</h3>
+
+            {joinRequestsLoading && (
+              <p>Loading join requests...</p>
+            )}
+
+            {joinRequestsError && (
+              <p role="alert">{joinRequestsError}</p>
+            )}
+
+            {!joinRequestsLoading &&
+              !joinRequestsError &&
+              joinRequests.length === 0 && (
+                <p>No pending join requests.</p>
+              )}
+
+            {joinRequests.map(request => (
+              <article
+                key={request.userId}
+                className="join-request"
+              >
+                <strong>{request.username}</strong>
+
+                <div className="join-request__actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleJoinRequestAction(
+                        request.userId,
+                        'PATCH',
+                      )
+                    }
+                    disabled={joinRequestActionUserId !== null}
+                  >
+                    Approve
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button-danger"
+                    onClick={() =>
+                      handleJoinRequestAction(
+                        request.userId,
+                        'DELETE',
+                      )
+                    }
+                    disabled={joinRequestActionUserId !== null}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
+
           <section>
             <h3>Current Members</h3>
           </section>
