@@ -102,6 +102,34 @@ jobs:
             done
 
             docker exec -i movie-db psql -U "$DB_USER" -d "$DB_NAME" < Backend/schema.sql
+
+            echo "Applying migrations for existing databases..."
+            for migration in Backend/migrations/*.sql; do
+              [ -e "$migration" ] || continue
+              echo "Applying $migration"
+              docker exec -i movie-db psql -U "$DB_USER" -d "$DB_NAME" < "$migration"
+            done
+
+            echo "Comparing live DB schema against Backend/schema.sql + migrations..."
+            docker exec movie-db psql -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS schema_check;" >/dev/null
+            docker exec movie-db psql -U "$DB_USER" -d postgres -c "CREATE DATABASE schema_check;" >/dev/null
+            docker exec -i movie-db psql -U "$DB_USER" -d schema_check < Backend/schema.sql >/dev/null
+            for migration in Backend/migrations/*.sql; do
+              [ -e "$migration" ] || continue
+              docker exec -i movie-db psql -U "$DB_USER" -d schema_check < "$migration" >/dev/null
+            done
+            docker exec movie-db pg_dump -U "$DB_USER" -d "$DB_NAME" --schema-only --no-owner --no-privileges --no-comments \
+              | grep -v '^--' | grep -v '^$' > /tmp/live_schema.sql
+            docker exec movie-db pg_dump -U "$DB_USER" -d schema_check --schema-only --no-owner --no-privileges --no-comments \
+              | grep -v '^--' | grep -v '^$' > /tmp/expected_schema.sql
+            docker exec movie-db psql -U "$DB_USER" -d postgres -c "DROP DATABASE schema_check;" >/dev/null
+            if diff -q /tmp/live_schema.sql /tmp/expected_schema.sql >/dev/null; then
+              echo "Live DB schema matches source code."
+            else
+              echo "WARNING: live DB schema differs from Backend/schema.sql + migrations:"
+              diff -u /tmp/live_schema.sql /tmp/expected_schema.sql || true
+            fi
+
             docker exec -i movie-db psql -U "$DB_USER" -d "$DB_NAME" < Backend/seed.sql
 
             docker ps

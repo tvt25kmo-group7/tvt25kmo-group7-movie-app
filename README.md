@@ -69,6 +69,14 @@ PostgreSQL data is stored in the Docker volume `postgres_movie_data`.
 Rebuilding application containers does not delete that data. Do not remove
 the volume unless you intentionally want to delete the database.
 
+**Schema changes on a long-lived database:** `schema.sql` only uses
+`CREATE TABLE IF NOT EXISTS`, so it does nothing on tables that already exist,
+even if a column was added later. Add a new idempotent file under
+`Backend/migrations/` (e.g. `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`) for
+any change that must reach an existing production database. The deploy
+workflow runs every file in that folder after `schema.sql` and prints a diff
+if the live database schema still doesn't match `schema.sql` + migrations.
+
 ### GitHub Actions deployment
 
 The workflow in `.github/workflows/deploy.yml` runs only after a push to `main`.
