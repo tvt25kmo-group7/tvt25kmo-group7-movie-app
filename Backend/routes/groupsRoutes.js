@@ -10,7 +10,7 @@ import {
   authenticateOptionalRequest,
 } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroup, getGroups } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups, addMediaToGroup } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -28,6 +28,86 @@ export async function handleGroupsRoute(req, res) {
   );
 
   const match = requestUrl.pathname.match(/^\/api\/groups\/(\d+)$/);
+  const mediaMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/media$/,
+  );
+
+  if (mediaMatch) {
+    if (req.method !== 'POST') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'POST' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res)) {
+      return true;
+    }
+
+    const groupId = Number(mediaMatch[1]);
+
+    try {
+      const body = await readJsonBody(req);
+      const { tmdbId, mediaType } = body;
+
+      if (!Number.isInteger(tmdbId) || tmdbId < 1) {
+        sendJson(res, 400, {
+          error: 'tmdbId must be a positive integer',
+        });
+        return true;
+      }
+
+      if (!['movie', 'tv'].includes(mediaType)) {
+        sendJson(res, 400, {
+          error: 'mediaType must be movie or tv',
+        });
+        return true;
+      }
+
+      const result = await addMediaToGroup(
+        groupId,
+        tmdbId,
+        mediaType,
+        req.user.id,
+      );
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'notMember') {
+        sendJson(res, 403, {
+          error: 'Only group members can add media',
+        });
+        return true;
+      }
+
+      sendJson(res, 201, result.media);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        sendJson(res, 400, { error: 'Invalid request body' });
+        return true;
+      }
+
+      if (error.code === '23505') {
+        sendJson(res, 409, {
+          error: 'This movie or series is already in the group',
+        });
+        return true;
+      }
+
+      console.error('Adding media to group failed:', error);
+      sendJson(res, 500, {
+        error: 'Media could not be added to the group',
+      });
+    }
+
+    return true;
+  }
 
   if (match && req.method === 'GET') {
     if (!authenticateOptionalRequest(req, res, { recycleToken: false })) {
