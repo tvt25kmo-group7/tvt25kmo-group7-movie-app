@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest } from '../models/groupModel.js';
 import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
@@ -29,7 +29,7 @@ async function createGroup(name, ownerId) {
 }
 
 async function getGroups() {
-  return getAllGroups(); 
+  return getAllGroups();
 }
 
 async function getUserGroups(userId) {
@@ -100,4 +100,38 @@ async function addMediaToGroup(groupId, tmdbId, mediaType, userId) {
   };
 }
 
-export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups };
+async function requestGroupMembership(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (group.isOwner || group.membershipStatus === 'member') {
+    return {
+      error: 'alreadyMember',
+    };
+  }
+
+  if (group.membershipStatus === 'pending') {
+    return {
+      error: 'requestPending',
+    };
+  }
+
+  if (group.membershipStatus === 'invited') {
+    return {
+      error: 'alreadyInvited',
+    };
+  }
+
+  const request = await insertJoinRequest(groupId, userId);
+
+  return {
+    request,
+  };
+}
+
+export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership };

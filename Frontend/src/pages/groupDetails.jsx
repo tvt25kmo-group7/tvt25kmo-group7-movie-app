@@ -12,6 +12,8 @@ export default function GroupDetails() {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [joinRequestSubmitting, setJoinRequestSubmitting] = useState(false);
+  const [joinRequestError, setJoinRequestError] = useState('');
 
   useEffect(() => {
     if (authLoading) {
@@ -45,6 +47,37 @@ export default function GroupDetails() {
     fetchGroup();
   }, [id, user, authLoading, authenticatedFetch]);
 
+  const handleJoinRequest = async () => {
+    setJoinRequestSubmitting(true);
+    setJoinRequestError('');
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/groups/${id}/join-requests`,
+        {
+          method: 'POST',
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Join request could not be sent',
+        );
+      }
+
+      setGroup(currentGroup => ({
+        ...currentGroup,
+        membershipStatus: 'pending',
+      }));
+    } catch (error) {
+      setJoinRequestError(error.message);
+    } finally {
+      setJoinRequestSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <p>Loading group...</p>;
   }
@@ -70,7 +103,31 @@ export default function GroupDetails() {
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
           <p>You are not a member of this group</p>
-          <button type="button">Request to Join</button>
+
+          <button
+            type="button"
+            onClick={handleJoinRequest}
+            disabled={joinRequestSubmitting}
+          >
+            {joinRequestSubmitting ? 'Sending request...' : 'Request to Join'}
+          </button>
+
+          {joinRequestError && (
+            <p role="alert">{joinRequestError}</p>
+          )}
+        </aside>
+      </section>
+    );
+  }
+
+  if (!group.isOwner && group.membershipStatus === 'pending') {
+    return (
+      <section className="group-details-page">
+        <aside className="group-details-sidebar">
+          <h1>{group.name}</h1>
+          <p role="status">
+            Your request to join this group is pending.
+          </p>
         </aside>
       </section>
     );
