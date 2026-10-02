@@ -5,7 +5,8 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId } from '../models/groupModel.js';
+import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
   const client = await database.connect();
@@ -32,7 +33,60 @@ async function getGroups() {
 }
 
 async function getGroup(groupId, userId = null) {
-  return getGroupById(groupId, userId);
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return null;
+  }
+
+  const storedMedia = await getGroupMediaByGroupId(groupId);
+
+  const media = await Promise.all(
+    storedMedia.map(async (item) => {
+      const details = await getMoviesById(
+        item.tmdbId,
+        item.mediaType,
+      );
+
+      return {
+        ...details,
+        addedBy: item.addedBy,
+        addedAt: item.createdAt,
+      };
+    }),
+  );
+
+  return {
+    ...group,
+    media,
+  };
 }
 
-export { createGroup, getGroups, getGroup };
+async function addMediaToGroup(groupId, tmdbId, mediaType, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return {
+      error: 'notMember',
+    };
+  }
+
+  const media = await insertGroupMedia(
+    groupId,
+    tmdbId,
+    mediaType,
+    userId,
+  );
+
+  return {
+    media,
+  };
+}
+
+export { createGroup, getGroups, getGroup, addMediaToGroup };
