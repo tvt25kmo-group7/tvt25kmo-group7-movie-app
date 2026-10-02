@@ -9,6 +9,7 @@ export default function Favorites() {
   const { token } = useParams();
 
   const [movies, setMovies] = useState([]);
+  const [ownerName, setOwnerName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -21,14 +22,28 @@ useEffect(() => {
       setLoading(true); setError(''); 
 
       if (token) { 
-        const response = await fetch(`/api/favorites/${token}`); 
+        const [response, usersResponse] = await Promise.all([
+          fetch(`/api/favorites/${token}`),
+          fetch('/api/users/shared-favorites'),
+        ]);
+
         if (!response.ok) { 
           throw new Error('Failed to fetch shared favorite movies'); 
         } 
         
-        const data = await response.json(); 
+        const data = await response.json();
+        if (usersResponse.ok) {
+          const users = await usersResponse.json();
+          const owner = users.find((sharedUser) => (
+            sharedUser.favorites_share_token === token
+          ));
+          setOwnerName(owner?.username ?? '');
+        }
+
         setMovies(data.results ?? []); 
         return; } 
+
+        setOwnerName('');
         
         if (authLoading /*|| !user?.token*/) { 
           return; 
@@ -78,9 +93,14 @@ useEffect(() => {
     <section className="favorites-page">
       <div className="favorites-header">
         <div>
-          <h1>Favorites</h1>
+          <h1>
+            {token
+              ? ownerName ? `${ownerName}'s Favorites` : 'Favorites'
+              : 'My Favorites'}
+          </h1>
         </div>
 
+        {!token && (
           <button
             type="button"
             onClick={handleShareList}
@@ -88,8 +108,9 @@ useEffect(() => {
           >
             {shareLoading ? 'Creating...' : 'Share List'}
           </button>
+        )}
 
-          {shareError && (
+          {!token && shareError && (
             <p>{shareError}</p>
           )}
    
