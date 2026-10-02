@@ -10,7 +10,7 @@ import {
   authenticateOptionalRequest,
 } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, requestGroupMembership } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -18,6 +18,7 @@ async function readJsonBody(req) {
   for await (const chunk of req) {
     body += chunk;
   }
+
   return JSON.parse(body);
 }
 
@@ -28,11 +29,17 @@ export async function handleGroupsRoute(req, res) {
   );
 
   const match = requestUrl.pathname.match(/^\/api\/groups\/(\d+)$/);
+
   const mediaMatch = requestUrl.pathname.match(
     /^\/api\/groups\/(\d+)\/media$/,
   );
+
   const joinRequestMatch = requestUrl.pathname.match(
     /^\/api\/groups\/(\d+)\/join-requests$/,
+  );
+
+  const joinRequestUserMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/join-requests\/(\d+)$/,
   );
 
   if (requestUrl.pathname === '/api/groups/mine') {
@@ -63,22 +70,129 @@ export async function handleGroupsRoute(req, res) {
     return true;
   }
 
-  if (joinRequestMatch) {
-    if (req.method !== 'POST') {
+  if (joinRequestUserMatch) {
+    if (!['PATCH', 'DELETE'].includes(req.method)) {
       sendJson(
         res,
         405,
         { error: 'Method not allowed' },
-        { Allow: 'POST' },
+        { Allow: 'PATCH, DELETE' },
       );
       return true;
     }
 
-    if (!authenticateRequest(req, res)) {
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    const groupId = Number(joinRequestUserMatch[1]);
+    const requestedUserId = Number(joinRequestUserMatch[2]);
+
+    if (!Number.isInteger(requestedUserId) || requestedUserId < 1) {
+      sendJson(res, 400, {
+        error: 'userId must be a positive integer',
+      });
+      return true;
+    }
+
+    try {
+      const result =
+        req.method === 'PATCH' ?
+          await approveGroupJoinRequest(
+            groupId,
+            requestedUserId,
+            req.user.id,
+          )
+        : await rejectGroupJoinRequest(
+            groupId,
+            requestedUserId,
+            req.user.id,
+          );
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'notOwner') {
+        sendJson(res, 403, {
+          error: 'Only the group owner can manage join requests',
+        });
+        return true;
+      }
+
+      if (result.error === 'requestNotFound') {
+        sendJson(res, 404, {
+          error: 'Pending join request not found',
+        });
+        return true;
+      }
+
+      if (req.method === 'PATCH') {
+        sendJson(res, 200, result.membership);
+        return true;
+      }
+
+      sendJson(res, 200, {
+        message: 'Join request rejected',
+        request: result.request,
+      });
+    } catch (error) {
+      console.error('Managing group join request failed:', error);
+      sendJson(res, 500, {
+        error: 'Group join request could not be managed',
+      });
+    }
+
+    return true;
+  }
+
+  if (joinRequestMatch) {
+    if (!['GET', 'POST'].includes(req.method)) {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'GET, POST' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
       return true;
     }
 
     const groupId = Number(joinRequestMatch[1]);
+
+    if (req.method === 'GET') {
+      try {
+        const result = await getGroupJoinRequests(
+          groupId,
+          req.user.id,
+        );
+
+        if (result.error === 'groupNotFound') {
+          sendJson(res, 404, { error: 'Group not found' });
+          return true;
+        }
+
+        if (result.error === 'notOwner') {
+          sendJson(res, 403, {
+            error: 'Only the group owner can view join requests',
+          });
+          return true;
+        }
+
+        sendJson(res, 200, result.requests);
+      } catch (error) {
+        console.error('Fetching group join requests failed:', error);
+        sendJson(res, 500, {
+          error: 'Group join requests could not be loaded',
+        });
+      }
+
+      return true;
+    }
 
     try {
       const result = await requestGroupMembership(
@@ -221,11 +335,13 @@ export async function handleGroupsRoute(req, res) {
         sendJson(res, 404, { error: 'Group not found' });
         return true;
       }
+
       sendJson(res, 200, group);
     } catch (error) {
       console.error('Fetching group failed:', error);
       sendJson(res, 500, { error: 'Group could not be loaded' });
     }
+
     return true;
   }
 
@@ -241,6 +357,7 @@ export async function handleGroupsRoute(req, res) {
       console.error('Fetching groups failed:', error);
       sendJson(res, 500, { error: 'Group list could not be loaded' });
     }
+
     return true;
   }
 
@@ -263,7 +380,9 @@ export async function handleGroupsRoute(req, res) {
     const name = body.name?.trim();
 
     if (!name || name.length > 100) {
-      sendJson(res, 400, { error: 'Group name must contain 1-100 characters' });
+      sendJson(res, 400, {
+        error: 'Group name must contain 1-100 characters',
+      });
       return true;
     }
 
@@ -286,5 +405,6 @@ export async function handleGroupsRoute(req, res) {
     console.error('Group creation failed:', error);
     sendJson(res, 500, { error: 'Group creation failed' });
   }
+
   return true;
 }
