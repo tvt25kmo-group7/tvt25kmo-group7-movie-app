@@ -73,6 +73,17 @@ export default function GroupDetails() {
     );
   }
 
+  if (!group.isOwner && group.membershipStatus === 'member') {
+    return (
+      <section className="group-details-page">
+        <aside className="group-details-sidebar">
+          <h1>{group.name}</h1>
+          <p>You are a member of this group</p>
+        </aside>
+      </section>
+    );
+  }
+
   return (
     <section className="group-details-page">
       <aside className="group-details-sidebar">
