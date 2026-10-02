@@ -7,8 +7,8 @@ import LoginModal from './loginModal';
 import RegisterModal from './registerModal';
 
 export default function Navbar() {
-   const { user, logout } = useAuth();
-   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,7 +72,7 @@ export default function Navbar() {
               Groups
             </Link>
 
-            <Link to={`/favorites/${user?.id}`} onClick={handleProtectedClick}>
+            <Link to={`/favorites`} onClick={handleProtectedClick}>
               Favorites
             </Link>
 
