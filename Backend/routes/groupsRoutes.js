@@ -30,7 +30,7 @@ export async function handleGroupsRoute(req, res) {
   const match = requestUrl.pathname.match(/^\/api\/groups\/(\d+)$/);
 
   if (match && req.method === 'GET') {
-    if (!authenticateOptionalRequest(req, res)) {
+    if (!authenticateOptionalRequest(req, res, { recycleToken: false })) {
       return true;
     }
 

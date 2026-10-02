@@ -36,7 +36,7 @@ async function getGroupById(groupId, userId = null) {
     `SELECT 
       groups.id, 
       groups.name,
-      COALESCE(groupId.owner_id = $2, false) AS "isOwner"
+      COALESCE(groups.owner_id = $2, false) AS "isOwner",
       group_members.status AS "membershipStatus"
     FROM groups
     LEFT JOIN group_members
