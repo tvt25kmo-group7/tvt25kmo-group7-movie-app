@@ -427,6 +427,7 @@ export default function MovieDetails() {
       {createGroupModalOpen && (
         <CreateGroupModal
           onClose={() => setCreateGroupModalOpen(false)}
+          onCreated={() => setShareModalOpen(true)}
         />
       )}
     </>
