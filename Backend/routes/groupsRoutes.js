@@ -10,7 +10,7 @@ import {
   authenticateOptionalRequest,
 } from '../auth/auth.js';
 import { sendJson } from '../helpers/sendJson.js';
-import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest } from '../services/groupsService.js';
+import { createGroup, getGroup, getGroups, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest, getGroupMembers, leaveGroup, removeGroupMember, deleteGroup } from '../services/groupsService.js';
 
 async function readJsonBody(req) {
   let body = '';
@@ -40,6 +40,18 @@ export async function handleGroupsRoute(req, res) {
 
   const joinRequestUserMatch = requestUrl.pathname.match(
     /^\/api\/groups\/(\d+)\/join-requests\/(\d+)$/,
+  );
+
+  const membersMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/members$/,
+  );
+
+  const memberMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/members\/(\d+)$/,
+  );
+
+  const leaveGroupMatch = requestUrl.pathname.match(
+    /^\/api\/groups\/(\d+)\/members\/me$/,
   );
 
   if (requestUrl.pathname === '/api/groups/mine') {
@@ -244,6 +256,180 @@ export async function handleGroupsRoute(req, res) {
     return true;
   }
 
+  if (leaveGroupMatch) {
+    if (req.method !== 'DELETE') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'DELETE' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    const groupId = Number(leaveGroupMatch[1]);
+
+    try {
+      const result = await leaveGroup(groupId, req.user.id);
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'ownerCannotLeave') {
+        sendJson(res, 409, {
+          error: 'The group owner cannot leave the group',
+        });
+        return true;
+      }
+
+      if (
+        result.error === 'notMember'
+        || result.error === 'membershipNotFound'
+      ) {
+        sendJson(res, 404, {
+          error: 'Group membership not found',
+        });
+        return true;
+      }
+
+      sendJson(res, 200, {
+        message: 'You have left the group',
+        membership: result.membership,
+      });
+    } catch (error) {
+      console.error('Leaving group failed:', error);
+      sendJson(res, 500, {
+        error: 'Group could not be left',
+      });
+    }
+
+    return true;
+  }
+
+  if (memberMatch) {
+    if (req.method !== 'DELETE') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'DELETE' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    const groupId = Number(memberMatch[1]);
+    const memberId = Number(memberMatch[2]);
+
+    if (!Number.isInteger(memberId) || memberId < 1) {
+      sendJson(res, 400, {
+        error: 'userId must be a positive integer',
+      });
+      return true;
+    }
+
+    try {
+      const result = await removeGroupMember(
+        groupId,
+        memberId,
+        req.user.id,
+      );
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'notOwner') {
+        sendJson(res, 403, {
+          error: 'Only the group owner can remove members',
+        });
+        return true;
+      }
+
+      if (result.error === 'ownerCannotBeRemoved') {
+        sendJson(res, 409, {
+          error: 'The group owner cannot be removed',
+        });
+        return true;
+      }
+
+      if (result.error === 'membershipNotFound') {
+        sendJson(res, 404, {
+          error: 'Group membership not found',
+        });
+        return true;
+      }
+
+      sendJson(res, 200, {
+        message: 'Member removed from the group',
+        membership: result.membership,
+      });
+    } catch (error) {
+      console.error('Removing group member failed:', error);
+      sendJson(res, 500, {
+        error: 'Group member could not be removed',
+      });
+    }
+
+    return true;
+  }
+
+  if (membersMatch) {
+    if (req.method !== 'GET') {
+      sendJson(
+        res,
+        405,
+        { error: 'Method not allowed' },
+        { Allow: 'GET' },
+      );
+      return true;
+    }
+
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    const groupId = Number(membersMatch[1]);
+
+    try {
+      const result = await getGroupMembers(
+        groupId,
+        req.user.id,
+      );
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, { error: 'Group not found' });
+        return true;
+      }
+
+      if (result.error === 'notMember') {
+        sendJson(res, 403, {
+          error: 'Only group members can view the member list',
+        });
+        return true;
+      }
+
+      sendJson(res, 200, result.members);
+    } catch (error) {
+      console.error('Fetching group members failed:', error);
+      sendJson(res, 500, {
+        error: 'Group members could not be loaded',
+      });
+    }
+
+    return true;
+  }
+
   if (mediaMatch) {
     if (req.method !== 'POST') {
       sendJson(
@@ -315,6 +501,44 @@ export async function handleGroupsRoute(req, res) {
       console.error('Adding media to group failed:', error);
       sendJson(res, 500, {
         error: 'Media could not be added to the group',
+      });
+    }
+
+    return true;
+  }
+
+  if (match && req.method === 'DELETE') {
+    if (!authenticateRequest(req, res, { recycleToken: false })) {
+      return true;
+    }
+
+    const groupId = Number(match[1]);
+
+    try {
+      const result = await deleteGroup(groupId, req.user.id);
+
+      if (result.error === 'groupNotFound') {
+        sendJson(res, 404, {
+          error: 'Group not found',
+        });
+        return true;
+      }
+
+      if (result.error === 'notOwner') {
+        sendJson(res, 403, {
+          error: 'Only the group owner can delete the group',
+        });
+        return true;
+      }
+
+      sendJson(res, 200, {
+        message: 'Group deleted',
+        group: result.group,
+      });
+    } catch (error) {
+      console.error('Deleting group failed:', error);
+      sendJson(res, 500, {
+        error: 'Group could not be deleted',
       });
     }
 

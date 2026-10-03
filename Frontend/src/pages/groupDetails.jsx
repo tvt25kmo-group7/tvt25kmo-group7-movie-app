@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import MovieCard from '../components/movieCard';
 
@@ -7,6 +7,7 @@ import './groupDetails.css';
 
 export default function GroupDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, authLoading, authenticatedFetch } = useAuth();
 
   const [group, setGroup] = useState(null);
@@ -19,7 +20,17 @@ export default function GroupDetails() {
   const [joinRequests, setJoinRequests] = useState([]);
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState('');
-  const [joinRequestActionUserId, setJoinRequestActionUserId] = useState(null);
+  const [joinRequestActionUserId, setJoinRequestActionUserId] =
+    useState(null);
+
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState('');
+  const [memberActionUserId, setMemberActionUserId] = useState(null);
+
+  const [leavingGroup, setLeavingGroup] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
+  const [groupActionError, setGroupActionError] = useState('');
 
   useEffect(() => {
     if (authLoading) {
@@ -27,6 +38,9 @@ export default function GroupDetails() {
     }
 
     async function fetchGroup() {
+      setLoading(true);
+      setError('');
+
       try {
         const response =
           user ?
@@ -43,6 +57,38 @@ export default function GroupDetails() {
 
         const data = await response.json();
         setGroup(data);
+
+        if (data.isOwner || data.membershipStatus === 'member') {
+          setMembersLoading(true);
+          setMembersError('');
+
+          try {
+            const membersResponse = await authenticatedFetch(
+              `/api/groups/${id}/members`,
+            );
+
+            const membersData = await membersResponse
+              .json()
+              .catch(() => []);
+
+            if (!membersResponse.ok) {
+              throw new Error(
+                membersData.error || 'Group members could not be loaded',
+              );
+            }
+
+            setMembers(
+              Array.isArray(membersData) ? membersData : [],
+            );
+          } catch (membersFetchError) {
+            setMembersError(membersFetchError.message);
+          } finally {
+            setMembersLoading(false);
+          }
+        } else {
+          setMembers([]);
+          setMembersError('');
+        }
 
         if (data.isOwner) {
           setJoinRequestsLoading(true);
@@ -75,8 +121,8 @@ export default function GroupDetails() {
         } else {
           setJoinRequests([]);
         }
-      } catch (error) {
-        setError(error.message);
+      } catch (fetchError) {
+        setError(fetchError.message);
       } finally {
         setLoading(false);
       }
@@ -109,14 +155,18 @@ export default function GroupDetails() {
         ...currentGroup,
         membershipStatus: 'pending',
       }));
-    } catch (error) {
-      setJoinRequestError(error.message);
+    } catch (requestError) {
+      setJoinRequestError(requestError.message);
     } finally {
       setJoinRequestSubmitting(false);
     }
   };
 
   const handleJoinRequestAction = async (requestedUserId, method) => {
+    const handledRequest = joinRequests.find(
+      request => request.userId === requestedUserId,
+    );
+
     setJoinRequestActionUserId(requestedUserId);
     setJoinRequestsError('');
 
@@ -141,10 +191,124 @@ export default function GroupDetails() {
           request => request.userId !== requestedUserId,
         ),
       );
-    } catch (error) {
-      setJoinRequestsError(error.message);
+
+      if (method === 'PATCH' && handledRequest) {
+        setMembers(currentMembers => {
+          const alreadyListed = currentMembers.some(
+            member => member.userId === requestedUserId,
+          );
+
+          if (alreadyListed) {
+            return currentMembers;
+          }
+
+          return [
+            ...currentMembers,
+            {
+              userId: requestedUserId,
+              username: handledRequest.username,
+              isOwner: false,
+              joinedAt: responseData.joinedAt,
+            },
+          ];
+        });
+      }
+    } catch (requestError) {
+      setJoinRequestsError(requestError.message);
     } finally {
       setJoinRequestActionUserId(null);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    setLeavingGroup(true);
+    setGroupActionError('');
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/groups/${id}/members/me`,
+        {
+          method: 'DELETE',
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Group could not be left',
+        );
+      }
+
+      setMembers([]);
+      setGroup(currentGroup => ({
+        ...currentGroup,
+        isOwner: false,
+        membershipStatus: null,
+        media: [],
+      }));
+    } catch (leaveError) {
+      setGroupActionError(leaveError.message);
+    } finally {
+      setLeavingGroup(false);
+    }
+  };
+
+  const handleRemoveMember = async memberId => {
+    setMemberActionUserId(memberId);
+    setMembersError('');
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/groups/${id}/members/${memberId}`,
+        {
+          method: 'DELETE',
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Group member could not be removed',
+        );
+      }
+
+      setMembers(currentMembers =>
+        currentMembers.filter(member => member.userId !== memberId),
+      );
+    } catch (removeError) {
+      setMembersError(removeError.message);
+    } finally {
+      setMemberActionUserId(null);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    setDeletingGroup(true);
+    setGroupActionError('');
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/groups/${id}`,
+        {
+          method: 'DELETE',
+        },
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Group could not be deleted',
+        );
+      }
+
+      navigate('/groups');
+    } catch (deleteError) {
+      setGroupActionError(deleteError.message);
+    } finally {
+      setDeletingGroup(false);
     }
   };
 
@@ -153,7 +317,7 @@ export default function GroupDetails() {
   }
 
   if (error) {
-    return <p>{error}</p>;
+    return <p role="alert">{error}</p>;
   }
 
   if (!user) {
@@ -161,7 +325,7 @@ export default function GroupDetails() {
       <section className="group-details-page">
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
-          <p>Log in to request to join this group</p>
+          <p>Log in to request to join this group.</p>
         </aside>
       </section>
     );
@@ -172,18 +336,23 @@ export default function GroupDetails() {
       <section className="group-details-page">
         <aside className="group-details-sidebar">
           <h1>{group.name}</h1>
-          <p>You are not a member of this group</p>
+          <p>You are not a member of this group.</p>
 
           <button
             type="button"
+            className="button-primary group-action-button"
             onClick={handleJoinRequest}
             disabled={joinRequestSubmitting}
           >
-            {joinRequestSubmitting ? 'Sending request...' : 'Request to Join'}
+            {joinRequestSubmitting ?
+              'Sending request...'
+            : 'Request to Join'}
           </button>
 
           {joinRequestError && (
-            <p role="alert">{joinRequestError}</p>
+            <p className="group-error" role="alert">
+              {joinRequestError}
+            </p>
           )}
         </aside>
       </section>
@@ -203,7 +372,63 @@ export default function GroupDetails() {
     );
   }
 
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return (
+      <section className="group-details-page">
+        <aside className="group-details-sidebar">
+          <h1>{group.name}</h1>
+          <p>You are not a member of this group.</p>
+        </aside>
+      </section>
+    );
+  }
+
   const media = Array.isArray(group.media) ? group.media : [];
+
+  const memberList = (
+    <section className="group-members">
+      <h3>Current Members</h3>
+
+      {membersLoading && <p>Loading members...</p>}
+
+      {membersError && (
+        <p className="group-error" role="alert">
+          {membersError}
+        </p>
+      )}
+
+      {!membersLoading &&
+        !membersError &&
+        members.length === 0 && (
+          <p>No group members found.</p>
+        )}
+
+      {members.map(member => (
+        <div className="current-member" key={member.userId}>
+          <div className="current-member__identity">
+            <strong>{member.username}</strong>
+
+            {member.isOwner && (
+              <span className="current-member__role">Owner</span>
+            )}
+          </div>
+
+          {group.isOwner && !member.isOwner && (
+            <button
+              type="button"
+              className="button-danger"
+              onClick={() => handleRemoveMember(member.userId)}
+              disabled={memberActionUserId !== null}
+            >
+              {memberActionUserId === member.userId ?
+                'Removing...'
+              : 'Remove'}
+            </button>
+          )}
+        </div>
+      ))}
+    </section>
+  );
 
   const playlist = (
     <section className="group-playlist">
@@ -213,7 +438,7 @@ export default function GroupDetails() {
         <p>No movies or series have been shared with this group yet.</p>
       ) : (
         <div className="group-playlist__grid">
-          {media.map((item) => (
+          {media.map(item => (
             <MovieCard
               key={`${item.mediaType}-${item.tmdbId}`}
               movieId={item.tmdbId}
@@ -227,39 +452,45 @@ export default function GroupDetails() {
     </section>
   );
 
-  if (!group.isOwner && group.membershipStatus === 'member') {
-    return (
-      <section className="group-details-page">
-        <aside className="group-details-sidebar">
-          <h1>{group.name}</h1>
-          <p>You are a member of this group</p>
+  return (
+    <section className="group-details-page">
+      <aside className="group-details-sidebar">
+        <h1>{group.name}</h1>
 
-          <button type="button" className="button-danger">
-            Leave Group
+        <p>
+          {group.isOwner ?
+            'You are the creator of this group.'
+          : 'You are a member of this group.'}
+        </p>
+
+        {group.isOwner ? (
+          <button
+            type="button"
+            className="button-danger group-action-button"
+            onClick={handleDeleteGroup}
+            disabled={deletingGroup}
+          >
+            {deletingGroup ? 'Deleting...' : 'Delete Group'}
           </button>
-
-          <section>
-            <h3>Current Members</h3>
-          </section>
-        </aside>
-
-        {playlist}
-      </section>
-    );
-  }
-
-  if (group.isOwner) {
-    return (
-      <section className="group-details-page">
-        <aside className="group-details-sidebar">
-          <h1>{group.name}</h1>
-          <p>You are the creator of this group</p>
-
-          <button type="button" className="button-danger">
-            Delete Group
+        ) : (
+          <button
+            type="button"
+            className="button-danger group-action-button"
+            onClick={handleLeaveGroup}
+            disabled={leavingGroup}
+          >
+            {leavingGroup ? 'Leaving...' : 'Leave Group'}
           </button>
+        )}
 
-          <section>
+        {groupActionError && (
+          <p className="group-error" role="alert">
+            {groupActionError}
+          </p>
+        )}
+
+        {group.isOwner && (
+          <section className="group-join-requests">
             <h3>Join Requests</h3>
 
             {joinRequestsLoading && (
@@ -267,7 +498,9 @@ export default function GroupDetails() {
             )}
 
             {joinRequestsError && (
-              <p role="alert">{joinRequestsError}</p>
+              <p className="group-error" role="alert">
+                {joinRequestsError}
+              </p>
             )}
 
             {!joinRequestsLoading &&
@@ -286,6 +519,7 @@ export default function GroupDetails() {
                 <div className="join-request__actions">
                   <button
                     type="button"
+                    className="button-primary"
                     onClick={() =>
                       handleJoinRequestAction(
                         request.userId,
@@ -294,12 +528,14 @@ export default function GroupDetails() {
                     }
                     disabled={joinRequestActionUserId !== null}
                   >
-                    Approve
+                    {joinRequestActionUserId === request.userId ?
+                      'Saving...'
+                    : 'Approve'}
                   </button>
 
                   <button
                     type="button"
-                    className="button-danger"
+                    className="button-secondary"
                     onClick={() =>
                       handleJoinRequestAction(
                         request.userId,
@@ -314,22 +550,12 @@ export default function GroupDetails() {
               </article>
             ))}
           </section>
+        )}
 
-          <section>
-            <h3>Current Members</h3>
-          </section>
-        </aside>
-
-        {playlist}
-      </section>
-    );
-  }
-
-  return (
-    <section className="group-details-page">
-      <aside className="group-details-sidebar">
-        <h1>{group.name}</h1>
+        {memberList}
       </aside>
+
+      {playlist}
     </section>
   );
 }
