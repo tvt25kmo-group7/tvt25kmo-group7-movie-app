@@ -174,4 +174,62 @@ async function rejectJoinRequest(groupId, userId) {
   return result.rows[0] ?? null;
 }
 
-export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest };
+async function getGroupMembersByGroupId(groupId) {
+  const result = await database.query(
+    `SELECT
+      group_members.user_id AS "userId",
+      users.username,
+      (groups.owner_id = group_members.user_id) AS "isOwner",
+      group_members.joined_at AS "joinedAt"
+    FROM group_members
+    JOIN users
+      ON users.id = group_members.user_id
+    JOIN groups
+      ON groups.id = group_members.group_id
+    WHERE group_members.group_id = $1
+      AND group_members.status = 'member'
+    ORDER BY
+      (groups.owner_id = group_members.user_id) DESC,
+      users.username ASC`,
+    [groupId],
+  );
+
+  return result.rows;
+}
+
+async function deleteGroupMember(groupId, userId) {
+  const result = await database.query(
+    `DELETE FROM group_members
+    WHERE group_id = $1
+      AND user_id = $2
+      AND status = 'member'
+      AND user_id <> (
+        SELECT owner_id
+        FROM groups
+        WHERE id = $1
+      )
+    RETURNING
+      group_id AS "groupId",
+      user_id AS "userId"`,
+    [groupId, userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+async function deleteGroupById(groupId, ownerId) {
+  const result = await database.query(
+    `DELETE FROM groups
+    WHERE id = $1
+      AND owner_id = $2
+    RETURNING
+      id,
+      name,
+      owner_id AS "ownerId"`,
+    [groupId, ownerId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest, getGroupMembersByGroupId, deleteGroupMember, deleteGroupById };

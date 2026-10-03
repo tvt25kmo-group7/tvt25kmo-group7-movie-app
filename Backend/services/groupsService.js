@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest, getGroupMembersByGroupId, deleteGroupMember, deleteGroupById } from '../models/groupModel.js';
 import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
@@ -218,4 +218,122 @@ async function rejectGroupJoinRequest(groupId, requestedUserId, userId) {
   };
 }
 
-export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest };
+async function getGroupMembers(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return {
+      error: 'notMember',
+    };
+  }
+
+  const members = await getGroupMembersByGroupId(groupId);
+
+  return {
+    members,
+  };
+}
+
+async function leaveGroup(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (group.isOwner) {
+    return {
+      error: 'ownerCannotLeave',
+    };
+  }
+
+  if (group.membershipStatus !== 'member') {
+    return {
+      error: 'notMember',
+    };
+  }
+
+  const membership = await deleteGroupMember(groupId, userId);
+
+  if (!membership) {
+    return {
+      error: 'membershipNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function removeGroupMember(groupId, memberId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  if (memberId === userId) {
+    return {
+      error: 'ownerCannotBeRemoved',
+    };
+  }
+
+  const membership = await deleteGroupMember(groupId, memberId);
+
+  if (!membership) {
+    return {
+      error: 'membershipNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function deleteGroup(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const deletedGroup = await deleteGroupById(groupId, userId);
+
+  if (!deletedGroup) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  return {
+    group: deletedGroup,
+  };
+}
+
+export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest, getGroupMembers, leaveGroup, removeGroupMember, deleteGroup };
