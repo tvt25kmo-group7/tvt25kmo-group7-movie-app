@@ -18,7 +18,7 @@ export async function handleMovieRoutes(req, res) {
 
   const pathParts = requestUrl.pathname.split("/");
 
-  if (pathParts.length === 5) {
+  if (pathParts.length === 5 && pathParts[2] === "movies") {
     const mediaType = pathParts[3];
     const movieId = Number(pathParts[4]);
 

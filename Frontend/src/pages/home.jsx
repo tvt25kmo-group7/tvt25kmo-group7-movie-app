@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import './home.css';
+import { useAuth } from '../context/AuthContext';
 
 
 const genres = [
@@ -65,7 +66,9 @@ const parseYearRange = (value) => {
 };
 
 
-export default function Home() {
+export default function Home({}) {
+  const { user, authLoading, authenticatedFetch } = useAuth();
+
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,6 +81,9 @@ export default function Home() {
   const [selectedYearRange, setSelectedYearRange] = useState('');
   const [searchError, setSearchError] = useState('');
 
+  const [sharedFavorites, setSharedFavorites] = useState([]);
+  const [sharedFavoritesIndex, setSharedFavoritesIndex] = useState(0);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,7 +91,6 @@ export default function Home() {
       try {
         const response = await fetch('/api/movies');
         if (!response.ok) {
-          const body = await response.text();
           throw new Error(`Failed to fetch now-playing movies`);
         }
 
@@ -101,6 +106,33 @@ export default function Home() {
     fetchNowPlayingMovies();
   }, []);
 
+  useEffect(() => {
+  async function fetchSharedFavorites() {
+    try {
+      const response = await fetch(
+        '/api/users/shared-favorites'
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          'Failed to fetch shared favorite lists'
+        );
+      }
+
+      const data = await response.json();
+
+      setSharedFavorites(data);
+    } catch (error) {
+      console.error(
+        'Failed to fetch shared favorite lists:',
+        error
+      );
+    }
+  }
+
+  fetchSharedFavorites();
+  }, []);
+
   const visibleCount = 4;
 
   const carouselMovies = [
@@ -108,22 +140,19 @@ export default function Home() {
     ...movies.slice(0, visibleCount)
   ];
 
-  const nextMovies = () => {
-    if (movies.length === 0) return;
+  const nextCarousel = (current, length, setIndex) => {
+    if (length === 0) return;
 
-    setCurrentIndex(
-      (current) => (current + 3) % movies.length
-    );
+    setIndex((current) => (current + 3) % length);
   };
 
-  const previousMovies = () => {
-    if (movies.length === 0) return;
+  const previousCarousel = (current, length, setIndex) => {
+    if (length === 0) return;
 
-    setCurrentIndex(
-      (current) => (current - 3 + movies.length) % movies.length
+    setIndex(
+      (current) => (current - 3 + length) % length
     );
   };
-
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -284,7 +313,7 @@ export default function Home() {
         {!loading && !error && movies.length > 0 && (            
             <div className="movie-grid">
               
-              <button className="carousel-button" onClick={previousMovies}>&lt;</button>
+              <button className="carousel-button" onClick={() => previousCarousel(currentIndex, movies.length, setCurrentIndex)}>&lt;</button>
               <div className="movie-grid__frame">
                 <div className="movie-grid__viewport" style={{ '--carousel-index': currentIndex }}>
                   {carouselMovies.map((movie) => (
@@ -298,8 +327,57 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <button className="carousel-button"onClick={nextMovies}>&gt;</button>
+              <button className="carousel-button"onClick={() => nextCarousel(currentIndex, movies.length, setCurrentIndex)}>&gt;</button>
             </div>
+        )}
+      </section>
+
+      <section className="shared-favorites">
+        <h2>Shared Favorites</h2>
+
+        {sharedFavorites.length > 0 && (
+          <div className="movie-grid">
+            <button
+              className="carousel-button"
+              onClick={() => previousCarousel(sharedFavoritesIndex, sharedFavorites.length, setSharedFavoritesIndex)}
+            >
+              &lt;
+            </button>
+
+            <div className="movie-grid__frame">
+              <div
+                className="movie-grid__viewport"
+                style={{
+                  '--carousel-index': sharedFavoritesIndex,
+                }}
+              >
+                {sharedFavorites.map((sharedFavorite) => {
+                  const shareUrl =
+                    `${window.location.origin}/favorites/${sharedFavorite.favorites_share_token}`;
+
+                  return (
+                    <div
+                      className="shared-favorite-card"
+                      key={sharedFavorite.favorites_share_token}
+                    >
+                      <h3>{sharedFavorite.username}</h3>
+
+                      <a href={shareUrl}>
+                        {shareUrl}
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              className="carousel-button"
+              onClick={() => nextCarousel(sharedFavoritesIndex, sharedFavorites.length, setSharedFavoritesIndex)}
+            >
+              &gt;
+            </button>
+          </div>
         )}
       </section>
     </section>

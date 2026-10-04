@@ -6,6 +6,7 @@ import {
   findUserByUsername,
   saveRefreshToken,
   findUserByRefreshToken,
+  getAllSharedFavoriteUsers,
 } from '../models/userModel.js';
 
 import {
@@ -137,8 +138,13 @@ async function refreshAccessToken(refreshToken) {
   };
 }
 
+async function getSharedFavoriteUsers() {
+  return getAllSharedFavoriteUsers();
+}
+
 export {
   loginUser,
   registerUser,
   refreshAccessToken,
+  getSharedFavoriteUsers,
 };
