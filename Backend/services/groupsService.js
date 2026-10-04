@@ -5,7 +5,7 @@ Runs both queries in one transaction
 Uses parameterized SQL queries
 */
 import { database } from '../services/database.js';
-import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId } from '../models/groupModel.js';
+import { insertGroup, insertGroupMember, getAllGroups, getGroupById, insertGroupMedia, getGroupMediaByGroupId, getGroupsByUserId, insertJoinRequest, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest, getGroupMembersByGroupId, deleteGroupMember, deleteGroupById } from '../models/groupModel.js';
 import { getMoviesById } from './tmdbService.js';
 
 async function createGroup(name, ownerId) {
@@ -29,7 +29,11 @@ async function createGroup(name, ownerId) {
 }
 
 async function getGroups() {
-  return getAllGroups(); 
+  return getAllGroups();
+}
+
+async function getUserGroups(userId) {
+  return getGroupsByUserId(userId);
 }
 
 async function getGroup(groupId, userId = null) {
@@ -37,6 +41,13 @@ async function getGroup(groupId, userId = null) {
 
   if (!group) {
     return null;
+  }
+
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return {
+      ...group,
+      media: [],
+    };
   }
 
   const storedMedia = await getGroupMediaByGroupId(groupId);
@@ -89,4 +100,240 @@ async function addMediaToGroup(groupId, tmdbId, mediaType, userId) {
   };
 }
 
-export { createGroup, getGroups, getGroup, addMediaToGroup };
+async function requestGroupMembership(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (group.isOwner || group.membershipStatus === 'member') {
+    return {
+      error: 'alreadyMember',
+    };
+  }
+
+  if (group.membershipStatus === 'pending') {
+    return {
+      error: 'requestPending',
+    };
+  }
+
+  if (group.membershipStatus === 'invited') {
+    return {
+      error: 'alreadyInvited',
+    };
+  }
+
+  const request = await insertJoinRequest(groupId, userId);
+
+  return {
+    request,
+  };
+}
+
+async function getGroupJoinRequests(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const requests = await getPendingJoinRequests(groupId);
+
+  return {
+    requests,
+  };
+}
+
+async function approveGroupJoinRequest(groupId, requestedUserId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const membership = await approveJoinRequest(
+    groupId,
+    requestedUserId,
+  );
+
+  if (!membership) {
+    return {
+      error: 'requestNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function rejectGroupJoinRequest(groupId, requestedUserId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const request = await rejectJoinRequest(
+    groupId,
+    requestedUserId,
+  );
+
+  if (!request) {
+    return {
+      error: 'requestNotFound',
+    };
+  }
+
+  return {
+    request,
+  };
+}
+
+async function getGroupMembers(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner && group.membershipStatus !== 'member') {
+    return {
+      error: 'notMember',
+    };
+  }
+
+  const members = await getGroupMembersByGroupId(groupId);
+
+  return {
+    members,
+  };
+}
+
+async function leaveGroup(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (group.isOwner) {
+    return {
+      error: 'ownerCannotLeave',
+    };
+  }
+
+  if (group.membershipStatus !== 'member') {
+    return {
+      error: 'notMember',
+    };
+  }
+
+  const membership = await deleteGroupMember(groupId, userId);
+
+  if (!membership) {
+    return {
+      error: 'membershipNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function removeGroupMember(groupId, memberId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  if (memberId === userId) {
+    return {
+      error: 'ownerCannotBeRemoved',
+    };
+  }
+
+  const membership = await deleteGroupMember(groupId, memberId);
+
+  if (!membership) {
+    return {
+      error: 'membershipNotFound',
+    };
+  }
+
+  return {
+    membership,
+  };
+}
+
+async function deleteGroup(groupId, userId) {
+  const group = await getGroupById(groupId, userId);
+
+  if (!group) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  if (!group.isOwner) {
+    return {
+      error: 'notOwner',
+    };
+  }
+
+  const deletedGroup = await deleteGroupById(groupId, userId);
+
+  if (!deletedGroup) {
+    return {
+      error: 'groupNotFound',
+    };
+  }
+
+  return {
+    group: deletedGroup,
+  };
+}
+
+export { createGroup, getGroups, getGroup, addMediaToGroup, getUserGroups, requestGroupMembership, getGroupJoinRequests, approveGroupJoinRequest, rejectGroupJoinRequest, getGroupMembers, leaveGroup, removeGroupMember, deleteGroup };
