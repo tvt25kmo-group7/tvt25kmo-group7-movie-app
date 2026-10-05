@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import MovieCard from '../components/movieCard';
 import './profile.css';
 
 export default function Profile() {
@@ -11,6 +12,11 @@ export default function Profile() {
   const [account, setAccount] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewMovies, setReviewMovies] = useState({});
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
 
   // Haetaan tiedot vain kirjautuneen käyttäjän vaihtuessa.
   // Token recycling ei käynnistä hakua uudelleen.
@@ -54,6 +60,85 @@ export default function Profile() {
     // hakea tiedot vain käyttäjän ID:n vaihtuessa.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  useEffect(() => {
+    //checks if the user has logged in.
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+    //creates async function inside the useeffect because useEffect itself cannot be async. 
+    // because useeffect excpects a cleanup function or nothing to be returned .
+    //other wise it breaks the rules of hooks.
+    async function loadReviews() {
+    //starts loading the reviews.
+      setReviewsLoading(true);
+      setReviewsError('');
+
+      try {
+        const response = await authenticatedFetch('/api/reviews/me'); //waits till the fetched data has returned from the server before continuing
+        //checks if the response from the server is not ok, aka HTTP status is not 200-299
+        //meaning if the header is not 200-299 front end wont even get the body (data) section
+        if (!response.ok) {
+          throw new Error(`Reviews request failed (${response.status})`);
+        }
+
+        //parses json response from the server into a javascript object
+        //response is raw data parsing could take some time, so we await it before continuing
+        //canling the request if the component is closed or unmounted by checking the cancelled flag
+        const data = await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        //saves the reviews data into the state. in this section reviews only contains mediaType and tmdbId.
+        setReviews(data);
+
+        // fetching additional movie details from TMDB for display purposes. using promise.all so we can send mutliple fetch requests same time.
+        const movieEntries = await Promise.all(
+          data.map(async (review) => { //fetches additional movie details for each review
+            try {
+              const movieResponse = await fetch( 
+                `/api/movies/${review.media_type}/${review.tmdb_id}`,//fetches movie details from the server based on media type and TMDB ID
+              );
+              //if fetch fails and data is not mediatype and tmdb id combination, return null
+              if (!movieResponse.ok) {
+                return null;
+              }
+              //waits for the movie details to be parsed. meaning all the fetches that were made. 
+              const movie = await movieResponse.json();
+              return [`${review.media_type}-${review.tmdb_id}`, movie];
+            } catch {
+              return null; //if even one of the fetches fail, return null for that movie. this might cause problems in the UI display.
+            }
+          }),
+        );
+
+        if (!cancelled) {
+          setReviewMovies(Object.fromEntries(movieEntries.filter(Boolean)));
+        }
+      } catch (error) { //if error occurs during the fetch or processing of reviews. this will stop the whole process
+        if (!cancelled) {
+          console.error('Reviews request failed:', error);
+          setReviewsError('Could not load your reviews.');
+        }
+      } finally {
+        if (!cancelled) {
+          setReviewsLoading(false);
+        }
+      }
+    }
+
+    loadReviews();
+    //a cleaner function to cancel ongoing requests when the component unmounts or userId changes.
+    return () => {
+      cancelled = true;
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); //this tells useeffect to re-run the effect whenever the userId changes
 
   async function handleDeleteAccount() {
     setIsDeleting(true);
@@ -101,7 +186,7 @@ export default function Profile() {
                 className={`profile-stat ${activeSection === 'reviewed' ? 'profile-stat--active' : ''}`}
                 onClick={() => setActiveSection('reviewed')}
               >
-                <strong>15</strong>
+                <strong>{reviews.length}</strong>
                 <span>Reviewed titles</span>
               </button>
 
@@ -156,7 +241,33 @@ export default function Profile() {
           {activeSection === 'reviewed' && (
             <>
               <h2>Reviewed titles</h2>
-              <p>Your reviewed movies and series will be shown here.</p>
+
+              {reviewsLoading && <p>Loading your reviews...</p>}
+              {reviewsError && <p role="alert">{reviewsError}</p>}
+              {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+                <p>You haven&apos;t reviewed anything yet.</p>
+              )}
+
+              <div className="profile-reviews">
+                {reviews.map((review) => {
+                  const movie = reviewMovies[`${review.media_type}-${review.tmdb_id}`];
+
+                  return (
+                    <article key={review.id} className="profile-review-card">
+                      <MovieCard
+                        movieId={review.tmdb_id}
+                        mediaType={review.media_type}
+                        title={movie?.title ?? `#${review.tmdb_id}`}
+                        posterPath={movie?.posterPath}
+                      />
+                      <div className="profile-review-meta">
+                        <strong>{review.rating} / 5</strong>
+                        {review.review_text && <p>{review.review_text}</p>}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             </>
           )}
 
