@@ -1,7 +1,59 @@
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+
 import './modal.css';
 import './createGroupModal.css';
 
-export default function CreateGroupModal({ onClose }) {
+export default function CreateGroupModal({
+  onClose,
+  onCreated,
+}) {
+  const { authenticatedFetch } = useAuth();
+
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      setError('Enter a name for the group.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const response = await authenticatedFetch('/api/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+        }),
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 'Group could not be created',
+        );
+      }
+
+      onCreated?.(responseData);
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message);
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="modal-overlay">
       <div className="create-group-modal">
@@ -9,6 +61,7 @@ export default function CreateGroupModal({ onClose }) {
           type="button"
           className="modal-close"
           onClick={onClose}
+          disabled={submitting}
         >
           Close
         </button>
@@ -17,22 +70,39 @@ export default function CreateGroupModal({ onClose }) {
 
         <p>Start a new movie group and invite your friends.</p>
 
-        <label htmlFor="group-name">
-          Group Name
-        </label>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="group-name">
+            Group Name
+          </label>
 
-        <input
-          id="group-name"
-          type="text"
-          placeholder="keksi hyvä nimi"
-        />
+          <input
+            id="group-name"
+            type="text"
+            placeholder="Enter a group name"
+            value={name}
+            onChange={event => setName(event.target.value)}
+            maxLength={100}
+            autoFocus
+            required
+          />
 
-        <button
-          type="button"
-          className="button-primary"
-        >
-          Create Group
-        </button>
+          {error && (
+            <p
+              className="create-group-modal__error"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={submitting || !name.trim()}
+          >
+            {submitting ? 'Creating...' : 'Create Group'}
+          </button>
+        </form>
       </div>
     </div>
   );

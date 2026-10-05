@@ -13,6 +13,9 @@
   --color-primary: #2563eb;
   --color-primary-text: #ffffff;
 
+  --color-danger: #dc2626;
+  --color-danger-text: #ffffff;
+
   --color-overlay: rgba(0, 0, 0, 0.7);
 }
 
@@ -82,6 +85,13 @@ button {
   background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
+}
+
+.button-danger {
+  padding: 0.75rem 1rem;
+  background: var(--color-danger);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger);
 }
 
 button:focus-visible,

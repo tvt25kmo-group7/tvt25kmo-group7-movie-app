@@ -1,12 +1,13 @@
 .group-details-page {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 2rem;
 
   color: var(--color-text);
 }
 
 .group-details-sidebar {
+  align-self: start;
   padding: 1.5rem;
 
   background: var(--color-surface);
@@ -18,16 +19,27 @@
   margin-top: 0;
 }
 
+.group-action-button {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.group-details-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.group-error {
+  color: var(--color-danger);
+}
+
+.group-join-requests,
 .group-members {
   margin-top: 2rem;
 }
 
-.group-members h2 {
-  margin-bottom: 1.5rem;
-}
-
+.group-join-requests h3,
 .group-members h3 {
-  margin-top: 1.5rem;
   margin-bottom: 0.75rem;
 }
 
@@ -51,20 +63,62 @@
 
 .current-member {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
 
   padding: 0.75rem 0;
+
+  border-bottom: 1px solid var(--color-border);
+}
+
+.current-member__identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.current-member__role {
+  padding: 0.2rem 0.5rem;
+
+  background: var(--color-surface-secondary);
+  color: var(--color-text-muted);
+
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+
+  font-size: 0.8rem;
+}
+
+.current-member .button-danger {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
 }
 
 .group-playlist {
   min-width: 0;
 }
 
-.group-playlist .movie-grid {
+.group-playlist h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.group-playlist__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, 220px);
+  align-items: start;
   gap: 1.5rem;
+}
+
+.group-playlist__grid .movie-card__button {
+  background: transparent;
+  border: none;
+
+  font-size: 2rem;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {
@@ -78,5 +132,9 @@
 
   .join-request__actions button {
     width: 100%;
+  }
+
+  .group-playlist__grid {
+    justify-content: center;
   }
 }
