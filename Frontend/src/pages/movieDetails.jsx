@@ -257,13 +257,15 @@ export default function MovieDetails() {
               Review
             </button>
 
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={() => setShareModalOpen(true)}
-            >
-              Share with Group
-            </button>
+            {user?.token && (
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => setShareModalOpen(true)}
+              >
+                Share with Group
+              </button>
+            )}
           </div>
 
         </div>
@@ -412,17 +414,20 @@ export default function MovieDetails() {
 
       {shareModalOpen && (
         <ShareWithGroupModal
+          movieId={movieId}
+          mediaType={mediaType}
           onClose={() => setShareModalOpen(false)}
           onOpenCreateGroup={() => {
             setShareModalOpen(false);
-            setCreateGroupModalOpen(true);
-          }}
-        />
-      )}
+          setCreateGroupModalOpen(true);
+      }}
+    />
+    )}
 
       {createGroupModalOpen && (
         <CreateGroupModal
           onClose={() => setCreateGroupModalOpen(false)}
+          onCreated={() => setShareModalOpen(true)}
         />
       )}
     </>
