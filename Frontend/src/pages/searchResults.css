@@ -24,15 +24,12 @@
   border: 1px solid var(--color-border);
 }
 
-.search-results .search-bar button {
+.search-results .load-more-container button {
   padding: 0.9rem 1.5rem;
   background: var(--color-primary);
   color: var(--color-primary-text);
   border: 1px solid var(--color-primary);
 }
-
-
-
 
 .search-results .criteria-search {
   display: grid;
@@ -65,17 +62,22 @@
   border: 1px solid var(--color-border);
 }
 
-
 .search-results .search-bar button:disabled{
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-
 .search-results .movie-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
 }
 
 @media (max-width: 768px) {

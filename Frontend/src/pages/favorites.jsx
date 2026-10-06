@@ -73,7 +73,7 @@ useEffect(() => {
       
       const response = await authenticatedFetch( 
         '/api/users/share-token', 
-        { method: 'POST',         },
+        { method: 'POST', },
        ); 
        
        if (!response.ok) { 
