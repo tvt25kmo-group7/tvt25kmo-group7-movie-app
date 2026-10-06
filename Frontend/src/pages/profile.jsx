@@ -18,6 +18,11 @@ export default function Profile() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState('');
 
+  const [favorites, setFavorites] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [favoritesError, setFavoritesError] = useState('');
+
+
   // Haetaan tiedot vain kirjautuneen käyttäjän vaihtuessa.
   // Token recycling ei käynnistä hakua uudelleen.
   const userId = user?.id;
@@ -140,6 +145,50 @@ export default function Profile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]); //this tells useeffect to re-run the effect whenever the userId changes
 
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadFavorites() {
+      setFavoritesLoading(true);
+      setFavoritesError('');
+
+      try {
+        const response = await authenticatedFetch('/api/favorites');
+
+        if (!response.ok) {
+          throw new Error(`Favorites request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setFavorites(data.results ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Favorites request failed:', error);
+          setFavoritesError('Could not load your favorites.');
+        }
+      } finally {
+        if (!cancelled) {
+          setFavoritesLoading(false);
+        }
+      }
+    }
+
+    loadFavorites();
+
+    return () => {
+      cancelled = true;
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   async function handleDeleteAccount() {
     setIsDeleting(true);
     setDeleteError('');
@@ -196,7 +245,7 @@ export default function Profile() {
                 className={`profile-stat ${activeSection === 'favorites' ? 'profile-stat--active' : ''}`}
                 onClick={() => setActiveSection('favorites')}
               >
-                <strong>8</strong>
+                <strong>{favorites.length}</strong>
                 <span>Favorites</span>
               </button>
 
@@ -274,7 +323,24 @@ export default function Profile() {
           {activeSection === 'favorites' && (
             <>
               <h2>Favorites</h2>
-              <p>Your favorite movies will be shown here.</p>
+
+              {favoritesLoading && <p>Loading your favorites...</p>}
+              {favoritesError && <p role="alert">{favoritesError}</p>}
+              {!favoritesLoading && !favoritesError && favorites.length === 0 && (
+                <p>You haven&apos;t added any favorites yet.</p>
+              )}
+
+              <div className="profile-favorites">
+                {favorites.map((movie) => (
+                  <MovieCard
+                    key={`${movie.mediaType}-${movie.tmdbId}`}
+                    movieId={movie.tmdbId}
+                    mediaType={movie.mediaType}
+                    title={movie.title}
+                    posterPath={movie.posterPath}
+                  />
+                ))}
+              </div>
             </>
           )}
 
