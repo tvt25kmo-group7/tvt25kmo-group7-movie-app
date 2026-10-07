@@ -15,6 +15,7 @@ export default function Favorites() {
 
   const [shareLoading, setShareLoading] = useState(false); 
   const [shareError, setShareError] = useState('');
+  const [shareSuccess, setShareSuccess] = useState('');
 
 useEffect(() => { 
   async function fetchFavoriteMovies() { 
@@ -70,6 +71,7 @@ useEffect(() => {
     try { 
       setShareLoading(true); 
       setShareError(''); 
+      setShareSuccess('');
       
       const response = await authenticatedFetch( 
         '/api/users/share-token', 
@@ -81,6 +83,7 @@ useEffect(() => {
       } 
       
     await response.json();
+    setShareSuccess('Shared favorites link created and added to home page for other users!');
     } catch (error) { 
       console.error(error); 
       setShareError('Could not create shared favorites link'); 
@@ -92,29 +95,33 @@ useEffect(() => {
   return (
     <section className="favorites-page">
       <div className="favorites-header">
-        <div>
-          <h1>
-            {token
-              ? ownerName ? `${ownerName}'s Favorites` : 'Favorites'
-              : 'My Favorites'}
-          </h1>
-        </div>
+        <h1>
+          {token
+            ? ownerName ? `${ownerName}'s Favorites` : 'Favorites'
+            : 'My Favorites'}
+        </h1>
 
         {!token && (
-          <button
-            type="button"
-            onClick={handleShareList}
-            disabled={shareLoading}
-          >
-            {shareLoading ? 'Creating...' : 'Share List'}
-          </button>
-        )}
+          <div className="favorites-share">
+            {(shareSuccess || shareError) && (
+              <p
+                role={shareSuccess ? 'status' : 'alert'}
+                className={shareSuccess ? 'share-success' : 'share-error'}
+              >
+                {shareSuccess || shareError}
+              </p>
+            )}
 
-          {!token && shareError && (
-            <p>{shareError}</p>
-          )}
-   
-        </div>
+            <button
+              type="button"
+              onClick={handleShareList}
+              disabled={shareLoading}
+            >
+              {shareLoading ? 'Creating...' : 'Share List'}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="movie-grid">
         {loading && <p>Loading favorite movies...</p>}

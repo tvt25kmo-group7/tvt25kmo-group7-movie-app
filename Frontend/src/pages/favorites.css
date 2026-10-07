@@ -33,3 +33,18 @@
     width: 100%;
   }
 }
+
+.favorites-share {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.favorites-share p {
+  margin: 0;
+  max-width: 300px;
+  text-align: right;
+  line-height: 1.4;
+}
