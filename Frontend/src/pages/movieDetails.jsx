@@ -23,6 +23,8 @@ export default function MovieDetails() {
   const [reviewError, setReviewError] = useState('');
   const [reviewSubmitError, setReviewSubmitError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
+  const [favoriteAdded, setFavoriteAdded] = useState('');
+  const [favoriteError, setFavoriteError] = useState('');
 
   // Lets the Review button scroll straight to the form which is located bottom of the website.
   const reviewFormRef = useRef(null);
@@ -34,12 +36,6 @@ export default function MovieDetails() {
     ? `https://image.tmdb.org/t/p/w500${movieDetails.posterPath}`
     : null;
 
-  const handleReviewClick = () => {
-    reviewFormRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  };
 
   const buildReviewQuery = () =>
     new URLSearchParams({ mediaType, tmdbId: movieId }).toString();
@@ -121,6 +117,8 @@ export default function MovieDetails() {
     if (!user?.token) {
       return;
     }
+    setFavoriteAdded('');
+    setFavoriteError('');
 
     try {
       const response = await authenticatedFetch('/api/favorites', {
@@ -137,8 +135,10 @@ export default function MovieDetails() {
       if (!response.ok) {
         throw new Error('Failed to add favorite');
       }
+      setFavoriteAdded("Successfully added to favorites!");
     } catch (error) {
       console.error('Error adding favorite:', error);
+      setFavoriteError("Failed to add favorite. It may already be in your favorites.");
     }
   };
 
@@ -239,23 +239,27 @@ export default function MovieDetails() {
 
           <div className="movie-details__poster-actions">
             {user?.token && (
+              <>
                 <button
-                type="button"
-                className="button-primary"
-                onClick={handleAddFavorite}
-                >
-                Add to Favorites
-              </button>
-            )}
+                  type="button"
+                  className="button-primary"
+                  onClick={handleAddFavorite}
+                  >
+                  Add to Favorites
+                </button>
+                {favoriteAdded && (
+                  <p role="status" className="favorite-success">
+                    {favoriteAdded}
+                  </p>
+                )}
 
-            {/* Scrolls to the review form; submission is handled there. */}
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={handleReviewClick}
-            >
-              Review
-            </button>
+                {favoriteError && (
+                  <p role="alert" className="favorite-error">
+                    {favoriteError}
+                  </p>
+                )}
+              </>
+            )}
 
             {user?.token && (
               <button
@@ -275,10 +279,6 @@ export default function MovieDetails() {
 
           <div className="movie-details__meta">
             <span>{movieDetails.releaseDate?.split('-')[0]}</span>
-            <span>•</span>
-            <span> min</span>
-            <span>•</span>
-            <span>★★★★☆ /5</span>
           </div>
 
           <div className="movie-details__genres">

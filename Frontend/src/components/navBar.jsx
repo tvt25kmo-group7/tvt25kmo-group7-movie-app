@@ -1,6 +1,6 @@
 import './navBar.css';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import LoginModal from './loginModal';
@@ -12,6 +12,16 @@ export default function Navbar() {
 
   const [activeModal, setActiveModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem('theme') === 'dark',
+  );
+
+  useEffect(() => {
+    const theme = darkMode ? 'dark' : 'light';
+
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }, [darkMode]);
 
   function closeMenu() {
     setMenuOpen(false);
@@ -74,8 +84,14 @@ export default function Navbar() {
 
             {user ?
               <>
-                <Link to="/profile" onClick={closeMenu}>
-                  {user.username}
+                <Link
+                  to="/profile"
+                  className="navbar__profile"
+                  aria-label={`Open profile for ${user.username}`}
+                  title={`Open profile for ${user.username}`}
+                  onClick={closeMenu}
+                >
+                  {user.username?.charAt(0).toUpperCase()}
                 </Link>
 
                 <button
@@ -97,6 +113,23 @@ export default function Navbar() {
                 Login
               </button>
             }
+
+            <button
+              type="button"
+              className="navbar__theme-toggle"
+              aria-label={
+                darkMode ? 'Switch to light mode' : 'Switch to dark mode'
+              }
+              aria-pressed={darkMode}
+              title={
+                darkMode ? 'Switch to light mode' : 'Switch to dark mode'
+              }
+              onClick={() => setDarkMode(currentMode => !currentMode)}
+            >
+              <span aria-hidden="true">
+                {darkMode ? '☾' : '☀'}
+              </span>
+            </button>
           </div>
         </div>
       </nav>

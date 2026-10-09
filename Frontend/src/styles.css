@@ -19,6 +19,19 @@
   --color-overlay: rgba(0, 0, 0, 0.7);
 }
 
+:root[data-theme='dark'] {
+  --color-bg: #111827;
+  --color-surface: #1f2937;
+  --color-surface-secondary: #374151;
+
+  --color-text: #f9fafb;
+  --color-text-muted: #cbd5e1;
+
+  --color-border: #4b5563;
+
+  --color-primary: #3b82f6;
+}
+
 * {
   box-sizing: border-box;
 }

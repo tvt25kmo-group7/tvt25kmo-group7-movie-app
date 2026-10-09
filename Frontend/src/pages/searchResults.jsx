@@ -92,6 +92,11 @@ export default function SearchResults() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchError, setSearchError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pendingResults, setPendingResults] = useState([]);
+
 
   useEffect(() => {
     setSearchQuery(query);
@@ -121,49 +126,74 @@ export default function SearchResults() {
       setError('');
 
       try {
-        let requestUrl;
+        let collectedResults = [];
+        let currentPage = 1;
+        let lastTotalPages = 1;
 
-        if (hasCriteria) {
-          const criteriaParams = new URLSearchParams();
+        while (
+            collectedResults.length < 20 &&
+            currentPage <= lastTotalPages
+        ) {
+          let pageRequestUrl;
 
-          if (query) {
-            criteriaParams.set('query', query);
+          if (hasCriteria) {
+            const criteriaParams = new URLSearchParams();
+
+            if (query) {
+              criteriaParams.set('query', query);
+            }
+
+            if (genre) {
+              criteriaParams.set('genre', genre);
+            }
+
+            if (year) {
+              criteriaParams.set('year', year);
+            }
+
+            if (yearFrom) {
+              criteriaParams.set('yearFrom', yearFrom);
+            }
+
+            if (yearTo) {
+              criteriaParams.set('yearTo', yearTo);
+            }
+
+            criteriaParams.set('page', currentPage);
+
+            pageRequestUrl =
+              `/api/search/criteria?${criteriaParams.toString()}`;
+          } else {
+            pageRequestUrl =
+              `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}`;
           }
 
-          if (genre) {
-            criteriaParams.set('genre', genre);
+          const response = await fetch(pageRequestUrl);
+
+          if (!response.ok) {
+            throw new Error('Search request failed');
           }
 
-          if (year) {
-            criteriaParams.set('year', year);
-          }
+          const data = await response.json();
 
-          if (yearFrom) {
-            criteriaParams.set('yearFrom', yearFrom);
-          }
+          lastTotalPages = data.totalPages ?? 1;
 
-          if (yearTo) {
-            criteriaParams.set('yearTo', yearTo);
-          }
+          collectedResults = [
+            ...collectedResults,
+            ...data.results,
+          ];
 
-          requestUrl =
-            `/api/search/criteria?${criteriaParams.toString()}`;
-        } else {
-          requestUrl =
-            `/api/search?query=${encodeURIComponent(query)}`;
+          currentPage += 1;
         }
 
-        const response = await fetch(requestUrl);
+        setMovies(collectedResults.slice(0, 20));
+        setPendingResults(collectedResults.slice(20));
+        setPage(currentPage);
+        setTotalPages(lastTotalPages);
 
-        if (!response.ok) {
-          throw new Error('Search request failed');
-        }
-
-        const data = await response.json();
-        setMovies(data.results);
       } catch (error) {
-        console.error('Movie search failed:', error);
-        setError('Could not search movies and series.');
+        console.error('Result search failed:', error);
+        setError('Failed to fetch search results. Please try again later.');
         setMovies([]);
       } finally {
         setLoading(false);
@@ -232,6 +262,92 @@ export default function SearchResults() {
     setSearchParams(newSearchParams);
   };
 
+
+  const handleLoadMore = async () => {
+  if (loadingMore) {
+    return;
+  }
+
+  setLoadingMore(true);
+
+  try {
+    let collectedResults = [...pendingResults];
+    let currentPage = page;
+    let lastTotalPages = totalPages;
+
+    while (
+      collectedResults.length < 20 &&
+      currentPage <= lastTotalPages
+    ) {
+      let pageRequestUrl;
+
+      if (genre || year || yearFrom || yearTo) {
+        const criteriaParams = new URLSearchParams();
+
+        if (query) {
+          criteriaParams.set('query', query);
+        }
+
+        if (genre) {
+          criteriaParams.set('genre', genre);
+        }
+
+        if (year) {
+          criteriaParams.set('year', year);
+        }
+
+        if (yearFrom) {
+          criteriaParams.set('yearFrom', yearFrom);
+        }
+
+        if (yearTo) {
+          criteriaParams.set('yearTo', yearTo);
+        }
+
+        criteriaParams.set('page', currentPage);
+
+        pageRequestUrl =
+          `/api/search/criteria?${criteriaParams.toString()}`;
+      } else {
+        pageRequestUrl =
+          `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}`;
+      }
+
+      const response = await fetch(pageRequestUrl);
+
+      if (!response.ok) {
+        throw new Error('Search request failed');
+      }
+
+      const data = await response.json();
+
+      lastTotalPages = data.totalPages ?? 1;
+
+      collectedResults = [
+        ...collectedResults,
+        ...data.results,
+      ];
+
+      currentPage += 1;
+    }
+
+    const resultsToAdd = collectedResults.slice(0, 20);
+    const remainingResults = collectedResults.slice(20);
+
+    setMovies((prevMovies) => [
+      ...prevMovies,
+      ...resultsToAdd,
+    ]);
+
+    setPendingResults(remainingResults);
+    setPage(currentPage);
+    setTotalPages(lastTotalPages);
+  } catch (error) {
+    console.error('Load more failed:', error);
+  } finally {
+    setLoadingMore(false);
+  }
+};
 
   return (
     <section className="search-results">
@@ -316,18 +432,28 @@ export default function SearchResults() {
           <p>No movies or series found.</p>
         )}
 
-      {!loading && !error && movies.length > 0 && (
-        <div className="movie-grid">
-          {movies.map((movie) => (
-            <MovieCard
-              key={movie.tmdbId}
-              movieId={movie.tmdbId}
-              mediaType={movie.mediaType}
-              title={movie.title}
-              posterPath={movie.posterPath}
-            />
-          ))}
-        </div>
+        {!loading && !error && movies.length > 0 && (
+          <>
+          <div className="movie-grid">
+            {movies.map((movie) => (
+              <MovieCard
+                key={movie.tmdbId}
+                movieId={movie.tmdbId}
+                mediaType={movie.mediaType}
+                title={movie.title}
+                posterPath={movie.posterPath}
+              />
+            ))}
+          </div>
+
+          {(pendingResults.length > 0 || page <= totalPages) && (
+            <div className="load-more-container">
+              <button type="button" onClick={handleLoadMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

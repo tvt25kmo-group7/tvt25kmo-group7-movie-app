@@ -1,0 +1,1717 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0d14" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="OAMK Software Project, autumn 2026: Movie Web Application project presentation."
+    />
+    <!-- Inline icon avoids a failing /favicon.ico request on a static server. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23080b12'/%3E%3Cpath d='M12 9l12 7-12 7z' fill='%236ee7ff'/%3E%3C/svg%3E"
+    />
+    <title>Movie Web Application | Project Presentation</title>
+    <style>
+      /* Theme tokens keep the visual system easy to adjust from one place. */
+      :root {
+        --bg: #080b12;
+        --panel: #111725;
+        --text: #f6f7fb;
+        --muted: #a9b2c3;
+        --accent: #6ee7ff;
+        --accent2: #a78bfa;
+        --ok: #57e389;
+        --warn: #ffc857;
+        --no: #ff6b7a;
+        --line: #263147;
+        --max: 1180px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        overflow: hidden;
+      }
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .deck {
+        height: 100vh;
+        height: 100dvh;
+        position: relative;
+      }
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(48px, 6vw, 92px);
+        background:
+          radial-gradient(circle at 85% 5%, #17213a 0, transparent 34%),
+          linear-gradient(145deg, #080b12, #0b1020);
+        overflow: auto;
+      }
+      .slide.active {
+        display: flex;
+      }
+      .content {
+        position: relative;
+        z-index: 1;
+        width: min(100%, var(--max));
+        margin: auto;
+      }
+      .eyebrow {
+        margin: 0 0 16px;
+        color: var(--accent);
+        font-size: clamp(0.8rem, 1.2vw, 1rem);
+        font-weight: 800;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+      h1,
+      h2 {
+        margin: 0;
+        line-height: 0.96;
+        letter-spacing: -0.045em;
+      }
+      h1 {
+        font-size: clamp(3.4rem, 8vw, 7.4rem);
+        max-width: 10ch;
+      }
+      h2 {
+        font-size: clamp(2.5rem, 6vw, 5.2rem);
+        max-width: 14ch;
+      }
+      h3 {
+        margin: 0.2rem 0 0.7rem;
+        font-size: clamp(1.15rem, 2vw, 1.55rem);
+      }
+      p,
+      li {
+        font-size: clamp(1rem, 1.55vw, 1.35rem);
+        line-height: 1.5;
+      }
+      .lead {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: clamp(1.25rem, 2.2vw, 1.8rem);
+      }
+      .accent {
+        color: var(--accent);
+      }
+      .meta {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 42px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        margin-top: 34px;
+      }
+      .grid.three {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .card {
+        background: color-mix(in srgb, var(--panel) 88%, transparent);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 24px;
+      }
+      .card p {
+        margin: 0.2rem 0;
+        color: var(--muted);
+      }
+      .role {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .node {
+        padding: 30px 16px;
+        text-align: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+      }
+      .arrow {
+        font-size: 2rem;
+        color: var(--accent);
+      }
+      /* Architecture: three zones (client, server, external) with the database inside the server zone. */
+      .arch {
+        display: grid;
+        grid-template-columns: 1fr 64px 1fr 64px 1fr;
+        grid-template-rows: auto auto auto auto;
+        align-items: center;
+        margin-top: 28px;
+      }
+      .zone {
+        grid-row: 1 / 5;
+        align-self: stretch;
+        background: #ffffff05;
+        border: 1px dashed #3a4866;
+        border-radius: 24px;
+      }
+      .zone-label {
+        grid-row: 1;
+        align-self: start;
+        justify-self: center;
+        padding-top: 14px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+      .arch-node {
+        position: relative;
+        margin: 8px 22px;
+        padding: 24px 16px;
+        text-align: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+      }
+      .arch-node h3 {
+        margin: 0 0 4px;
+        font-size: clamp(1.1rem, 1.7vw, 1.5rem);
+      }
+      .arch-node p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      /* Stacked discs mark data stores, as in a database symbol. */
+      .arch-node.store {
+        border-radius: 34px / 22px;
+        box-shadow:
+          0 8px 0 -1px var(--panel),
+          0 8px 0 0 #34415c,
+          0 16px 0 -1px var(--panel),
+          0 16px 0 0 #34415c;
+      }
+      .link {
+        justify-self: center;
+        color: var(--accent);
+        font-size: 2rem;
+        line-height: 1;
+      }
+      .z1 {
+        grid-column: 1;
+      }
+      .z2 {
+        grid-column: 3;
+      }
+      .z3 {
+        grid-column: 5;
+      }
+      .l1 {
+        grid-column: 2;
+        grid-row: 2;
+      }
+      .l2 {
+        grid-column: 4;
+        grid-row: 2;
+      }
+      .lv {
+        grid-column: 3;
+        grid-row: 3;
+      }
+      .r2 {
+        grid-row: 2;
+      }
+      .r4 {
+        grid-row: 4;
+        margin-bottom: 40px;
+      }
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--muted);
+        flex: 0 0 auto;
+      }
+      .done .dot {
+        background: var(--ok);
+      }
+      .partial .dot {
+        background: var(--warn);
+      }
+      .missing .dot {
+        background: var(--no);
+      }
+      .req-tables {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 28px;
+        margin-top: 24px;
+      }
+      .req-table {
+        align-self: start;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 6px;
+        font-size: clamp(0.8rem, 1.05vw, 0.98rem);
+      }
+      .req-table th {
+        padding: 0 12px 2px;
+        text-align: left;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+      .req-table td {
+        padding: 8px 12px;
+        background: var(--panel);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        line-height: 1.25;
+      }
+      .req-table td:first-child {
+        border-left: 1px solid var(--line);
+        border-radius: 10px 0 0 10px;
+        white-space: nowrap;
+        color: var(--accent);
+        font-weight: 800;
+      }
+      .req-table td:last-child {
+        border-right: 1px solid var(--line);
+        border-radius: 0 10px 10px 0;
+        white-space: nowrap;
+      }
+      .req-table small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.86em;
+      }
+      .req-table .dot {
+        display: inline-block;
+        margin-right: 8px;
+      }
+      /* Dense slide: smaller heading and tighter rows so the table fits on laptop screens. */
+      @media (max-height: 900px) {
+        .slide.compact {
+          padding-top: 36px;
+          padding-bottom: 60px;
+        }
+        .slide.compact h2 {
+          font-size: clamp(2rem, 4vw, 3rem);
+        }
+        .slide.compact .section-intro {
+          margin-top: 8px;
+        }
+        .slide.compact .req-tables {
+          margin-top: 12px;
+        }
+        .slide.compact .req-table td {
+          padding: 5px 12px;
+        }
+      }
+      .req-legend {
+        display: flex;
+        gap: 22px;
+        flex-wrap: wrap;
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .req-legend .dot {
+        display: inline-block;
+        margin-right: 7px;
+      }
+      .shot-layout {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 28px;
+        align-items: center;
+        margin-top: 28px;
+      }
+      .screenshot {
+        width: 100%;
+        aspect-ratio: 16/10;
+        object-fit: cover;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        box-shadow: 0 20px 70px #0008;
+        background: #111725;
+      }
+      .shot-placeholder {
+        aspect-ratio: 16/10;
+        border: 1px dashed #4a5872;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        text-align: center;
+        padding: 25px;
+        background: #0e1422;
+      }
+      .steps {
+        counter-reset: item;
+        list-style: none;
+        padding: 0;
+      }
+      .steps li {
+        counter-increment: item;
+        margin: 16px 0;
+        padding-left: 54px;
+        position: relative;
+      }
+      .steps li:before {
+        content: counter(item);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: var(--accent);
+        color: #071019;
+        font-weight: 900;
+      }
+      .button {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 13px 20px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #061019;
+        text-decoration: none;
+        font-weight: 900;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .actions .button {
+        margin-top: 0;
+      }
+      .repository-link {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+      }
+      .quote {
+        max-width: 980px;
+        font-size: clamp(1.8rem, 4vw, 3.5rem);
+        line-height: 1.17;
+        letter-spacing: -0.035em;
+      }
+      .footer {
+        position: fixed;
+        left: 24px;
+        right: 24px;
+        bottom: 17px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #8691a6;
+        font-size: 0.8rem;
+        z-index: 10;
+        pointer-events: none;
+      }
+      .controls {
+        pointer-events: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .controls button {
+        border: 1px solid var(--line);
+        background: #111725;
+        color: var(--text);
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      .controls button:focus-visible,
+      .button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      /* Unfinished content. Remove the "todo" class from a span when its text is final. */
+      .todo {
+        background: #ffc85726;
+        outline: 1px dashed var(--warn);
+        outline-offset: 2px;
+        color: var(--warn);
+        border-radius: 3px;
+        padding: 0 4px;
+      }
+      .hours {
+        margin-top: 12px !important;
+        font-size: 0.95rem !important;
+      }
+      .carousel-missing {
+        display: none;
+        position: absolute;
+        inset: 0;
+        place-items: center;
+        margin: 0;
+        padding: 25px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .profile-carousel.is-missing .carousel-missing {
+        display: grid;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .progress {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent2), var(--accent));
+        transition: width 0.25s;
+        z-index: 11;
+      }
+      .help {
+        position: fixed;
+        inset: 0;
+        background: #050811ee;
+        z-index: 30;
+        display: none;
+        place-items: center;
+        padding: 30px;
+      }
+      .help.open {
+        display: grid;
+      }
+      .help .card {
+        max-width: 620px;
+      }
+      .kbd {
+        font-family: ui-monospace, monospace;
+        border: 1px solid #526079;
+        border-bottom-width: 3px;
+        border-radius: 6px;
+        padding: 2px 7px;
+        color: #fff;
+      }
+      .small {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+      .section-intro {
+        max-width: 850px;
+        margin: 18px 0 0;
+        color: var(--muted);
+      }
+      .spotlight {
+        position: fixed;
+        width: 420px;
+        height: 420px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        background: radial-gradient(circle, #6ee7ff14 0, transparent 68%);
+        transform: translate(-50%, -50%);
+        left: 75%;
+        top: 20%;
+        transition: opacity 0.3s;
+      }
+      .slide::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.18;
+        background-image:
+          linear-gradient(#ffffff05 1px, transparent 1px),
+          linear-gradient(90deg, #ffffff05 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(to bottom, black, transparent 70%);
+      }
+      .card,
+      .node,
+      .shot-placeholder {
+        transition:
+          transform 0.25s ease,
+          border-color 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+      /* Hover lift only on devices that really hover, so touch screens do not get stuck states. */
+      @media (hover: hover) {
+        .card:hover,
+        .node:hover,
+        .shot-placeholder:hover {
+          transform: translateY(-3px);
+          border-color: #50607d;
+          box-shadow: 0 18px 50px #0004;
+        }
+      }
+      .slide-indicator {
+        position: fixed;
+        right: 24px;
+        top: 20px;
+        color: #738099;
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        z-index: 10;
+      }
+
+      /* The profile carousel demonstrates the interactive dashboard states without recreating the application UI. */
+      .profile-carousel {
+        position: relative;
+        aspect-ratio: 16/10;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 20px 70px #0008;
+      }
+      .profile-frame {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transform: scale(1.015);
+        transition:
+          opacity 0.38s ease,
+          transform 0.7s ease;
+      }
+      .profile-carousel.is-missing {
+        border-style: dashed;
+        border-color: #4a5872;
+        background: #0e1422;
+      }
+      .profile-carousel.is-missing .profile-frame,
+      .profile-carousel.is-missing .profile-label,
+      .profile-carousel.is-missing .carousel-controls {
+        display: none;
+      }
+      .profile-frame.active {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .profile-label {
+        position: absolute;
+        left: 14px;
+        bottom: 14px;
+        padding: 8px 12px;
+        border: 1px solid #ffffff22;
+        border-radius: 999px;
+        background: #080b12d9;
+        color: var(--text);
+        font-size: 0.82rem;
+        font-weight: 800;
+        backdrop-filter: blur(8px);
+      }
+      .carousel-controls {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        display: flex;
+        gap: 6px;
+        z-index: 1;
+      }
+      .carousel-controls button {
+        min-width: 36px;
+        min-height: 36px;
+        border: 1px solid #ffffff33;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: #080b12d9;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .carousel-controls button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      .carousel-controls button:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+
+      /* Direction-aware transitions make keyboard navigation feel spatial and predictable. */
+      .slide.enter-forward .content {
+        animation: slideForward 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .slide.enter-backward .content {
+        animation: slideBackward 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      @keyframes slideForward {
+        from {
+          opacity: 0;
+          transform: translateY(34px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes slideBackward {
+        from {
+          opacity: 0;
+          transform: translateY(-34px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* The same deck remains usable on a phone during rehearsal. */
+      @media (max-width: 800px) {
+        .slide {
+          padding: 55px 25px 75px;
+        }
+        .grid,
+        .grid.three,
+        .shot-layout {
+          grid-template-columns: 1fr;
+        }
+        .arrow {
+          transform: rotate(90deg);
+          text-align: center;
+        }
+        .arch {
+          grid-template-columns: 1fr;
+          grid-template-rows: none;
+        }
+        .zone,
+        .zone-label {
+          display: none;
+        }
+        .arch-node,
+        .link {
+          grid-column: 1 !important;
+          grid-row: auto !important;
+        }
+        .arch .z1 {
+          order: 1;
+        }
+        .arch .l1 {
+          order: 2;
+        }
+        .arch .z2.r2 {
+          order: 3;
+        }
+        .arch .lv {
+          order: 4;
+        }
+        .arch .z2.r4 {
+          order: 5;
+        }
+        .arch .l2 {
+          order: 6;
+        }
+        .arch .z3 {
+          order: 7;
+        }
+        .link {
+          transform: rotate(90deg);
+        }
+        .req-tables {
+          grid-template-columns: 1fr;
+        }
+        .footer {
+          left: 12px;
+          right: 12px;
+        }
+        .controls button {
+          width: 34px;
+          height: 34px;
+        }
+      }
+      /* Motion is progressive enhancement and respects the viewer preference. */
+      @media (prefers-reduced-motion: reduce) {
+        .slide.enter-forward .content,
+        .slide.enter-backward .content {
+          animation: none;
+        }
+        .progress,
+        .spotlight,
+        .card,
+        .node,
+        .shot-placeholder,
+        .profile-frame {
+          transition: none;
+        }
+      }
+      /* Printing provides an offline PDF fallback for the live presentation. */
+      @media print {
+        html,
+        body {
+          overflow: visible;
+          background: #fff;
+        }
+        .deck {
+          height: auto;
+        }
+        .slide,
+        .slide.active {
+          position: relative;
+          display: flex;
+          width: 297mm;
+          height: 167mm;
+          page-break-after: always;
+          overflow: hidden;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .footer,
+        .progress,
+        .help {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="spotlight" aria-hidden="true"></div>
+    <div class="slide-indicator" id="sectionLabel">Opening</div>
+    <div class="sr-only" id="announcer" aria-live="polite"></div>
+    <main class="deck" id="deck">
+      <!-- Opening: establish the product and the people behind it. -->
+      <section
+        class="slide active"
+        data-section="Opening"
+        aria-labelledby="slide-title-1"
+      >
+        <div class="content">
+          <p class="eyebrow">OAMK Software Project · Autumn 2026</p>
+          <h1 id="slide-title-1">
+            Movie Web <span class="accent">Application</span>
+          </h1>
+          <p class="lead">
+            Discover, review and share movies with other users.
+          </p>
+          <div class="meta">
+            <span>Marianna</span><span>Jani</span><span>Emil</span
+            ><span>Joona</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Product: explain the outcome before discussing implementation details. -->
+      <section
+        class="slide"
+        data-section="Product"
+        aria-labelledby="slide-title-2"
+      >
+        <div class="content">
+          <p class="eyebrow">01 · Product</p>
+          <h2 id="slide-title-2">What we built</h2>
+          <p class="quote">
+            A responsive web application for discovering titles, writing
+            reviews, managing favourites and interacting through groups.
+          </p>
+        </div>
+      </section>
+      <!-- Team: connect responsibilities with verifiable project work. -->
+      <section
+        class="slide"
+        data-section="Team"
+        aria-labelledby="slide-title-3"
+      >
+        <div class="content">
+          <p class="eyebrow">02 · Team</p>
+          <h2 id="slide-title-3">Roles & contributions</h2>
+          <p class="section-intro">
+            Each team member contributed to delivery through a defined role and
+            measurable project work.
+          </p>
+          <div class="grid">
+            <article class="card">
+              <h3>Marianna</h3>
+              <div class="role">Product Owner · Developer</div>
+              <p><span class="todo">Contribution summary</span></p>
+              <p class="hours">Worklog: <span class="todo">XX h</span></p>
+            </article>
+            <article class="card">
+              <h3>Jani</h3>
+              <div class="role">Scrum Master · Developer</div>
+              <p>
+                Backend and API development, TMDB integration, testing,
+                technical problem-solving, team coordination, and project
+                documentation.
+              </p>
+              <p class="hours">Worklog: <span class="todo">XX h</span></p>
+            </article>
+            <article class="card">
+              <h3>Emil</h3>
+              <div class="role">Developer</div>
+              <p><span class="todo">Contribution summary</span></p>
+              <p class="hours">Worklog: <span class="todo">XX h</span></p>
+            </article>
+            <article class="card">
+              <h3>Joona</h3>
+              <div class="role">Developer</div>
+              <p><span class="todo">Contribution summary</span></p>
+              <p class="hours">Worklog: <span class="todo">XX h</span></p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <!-- Architecture: client, server and external zones; the database sits in the server zone. -->
+      <section
+        class="slide compact"
+        data-section="Architecture"
+        aria-labelledby="slide-title-4"
+      >
+        <div class="content">
+          <p class="eyebrow">03 · Architecture</p>
+          <h2 id="slide-title-4">Simple by design</h2>
+          <p class="section-intro">
+            The frontend talks to one backend, which owns data access and the
+            external TMDB integration.
+          </p>
+          <div class="arch">
+            <div class="zone z1" aria-hidden="true"></div>
+            <div class="zone z2" aria-hidden="true"></div>
+            <div class="zone z3" aria-hidden="true"></div>
+            <p class="zone-label z1">Client</p>
+            <p class="zone-label z2">Server</p>
+            <p class="zone-label z3">External</p>
+            <div class="arch-node z1 r2">
+              <h3>Frontend</h3>
+              <p>React + Vite</p>
+            </div>
+            <div class="link l1" aria-hidden="true">↔</div>
+            <div class="arch-node z2 r2">
+              <h3>Backend</h3>
+              <p>Node.js REST API</p>
+            </div>
+            <div class="link l2" aria-hidden="true">↔</div>
+            <div class="arch-node store z3 r2">
+              <h3>TMDB API</h3>
+              <p>External movie data</p>
+            </div>
+            <div class="link lv" aria-hidden="true">↕</div>
+            <div class="arch-node store z2 r4">
+              <h3>Database</h3>
+              <p>PostgreSQL</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Checklist: one row per course feature. Set the row class to done, partial or missing. -->
+      <section
+        class="slide compact"
+        data-section="Requirements"
+        aria-labelledby="slide-title-5"
+      >
+        <div class="content">
+          <p class="eyebrow">04 · Checklist</p>
+          <h2 id="slide-title-5">Feature checklist</h2>
+          <p class="section-intro">
+            All 15 checklist items are implemented: 14 required features and one
+            free-choice feature.
+          </p>
+          <div class="req-tables" id="requirements">
+            <table class="req-table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="done">
+                  <td>1/15</td>
+                  <td>
+                    Responsive UI<small>Layout scales to any screen size</small>
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>2/15</td>
+                  <td>
+                    Registration<small
+                      >Email and password with validation</small
+                    >
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>3/15</td>
+                  <td>Login<small>Log in and log out</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>4/15</td>
+                  <td>
+                    Account deletion<small>Account and user data removed</small>
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>5/15</td>
+                  <td>Search<small>Movies and series, 3+ criteria</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>6/15</td>
+                  <td>Now playing<small>Movies in Finnish cinemas</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>7/15</td>
+                  <td>
+                    Group pages<small
+                      >Create groups, members-only content</small
+                    >
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>8/15</td>
+                  <td>
+                    Membership requests<small>Owner accepts or rejects</small>
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+              </tbody>
+            </table>
+            <table class="req-table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="done">
+                  <td>9/15</td>
+                  <td>
+                    Remove / leave group<small
+                      >Owner removes, member can leave</small
+                    >
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>10/15</td>
+                  <td>
+                    Add title to group<small
+                      >Members add movies to the page</small
+                    >
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>11/15</td>
+                  <td>Reviews and ratings<small>Text and 1-5 stars</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>12/15</td>
+                  <td>Public reviews<small>Visible to all users</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>13/15</td>
+                  <td>
+                    Favourite list<small>Personal list on its own page</small>
+                  </td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>14/15</td>
+                  <td>Public favourite URL<small>Shareable link</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+                <tr class="done">
+                  <td>15/15</td>
+                  <td>Profile Dashboard<small>Free-choice feature</small></td>
+                  <td><span class="dot"></span>Done</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="req-legend">
+            <span
+              ><span class="dot" style="background: var(--ok)"></span>Done</span
+            >
+            <span
+              ><span class="dot" style="background: var(--warn)"></span>Partly
+              working</span
+            >
+            <span
+              ><span class="dot" style="background: var(--no)"></span>Not
+              working</span
+            >
+          </p>
+        </div>
+      </section>
+      <!-- Feature evidence: screenshots load only when the matching asset exists. -->
+      <section
+        class="slide"
+        data-section="Discovery"
+        aria-labelledby="slide-title-6"
+      >
+        <div class="content">
+          <p class="eyebrow">05 · Key features</p>
+          <h2 id="slide-title-6">Discovery</h2>
+          <div class="shot-layout">
+            <div
+              data-image="assets/screenshots/search.webp"
+              class="shot-placeholder"
+            >
+              Add screenshot:<br />assets/screenshots/search.webp
+            </div>
+            <div>
+              <h3>Find the right title</h3>
+              <ul>
+                <li>Movies and TV series</li>
+                <li>Name, genre and release year</li>
+                <li>Movies now playing in Finland</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section
+        class="slide"
+        data-section="Reviews"
+        aria-labelledby="slide-title-7"
+      >
+        <div class="content">
+          <p class="eyebrow">06 · Key features</p>
+          <h2 id="slide-title-7">Reviews & favourites</h2>
+          <div class="shot-layout">
+            <div
+              data-image="assets/screenshots/details.webp"
+              class="shot-placeholder"
+            >
+              Add screenshot:<br />assets/screenshots/details.webp
+            </div>
+            <div>
+              <ul>
+                <li>Rate titles from 1 to 5</li>
+                <li>Write and browse reviews</li>
+                <li>Maintain and share favourites</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section
+        class="slide"
+        data-section="Groups"
+        aria-labelledby="slide-title-8"
+      >
+        <div class="content">
+          <p class="eyebrow">07 · Key features</p>
+          <h2 id="slide-title-8">Groups & profile</h2>
+          <div class="grid">
+            <div
+              data-image="assets/screenshots/group.webp"
+              class="shot-placeholder"
+            >
+              Add screenshot:<br />assets/screenshots/group.webp
+            </div>
+            <div
+              class="profile-carousel"
+              data-interval="2800"
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Profile Dashboard screenshots"
+            >
+              <img
+                class="profile-frame active"
+                src="assets/screenshots/profile-reviewed.webp"
+                data-label="Reviewed titles"
+                alt="Profile Dashboard showing reviewed titles"
+                aria-hidden="false"
+              />
+              <img
+                class="profile-frame"
+                src="assets/screenshots/profile-favorites.webp"
+                data-label="Favorites"
+                alt="Profile Dashboard showing favourite titles"
+                aria-hidden="true"
+              />
+              <img
+                class="profile-frame"
+                src="assets/screenshots/profile-groups.webp"
+                data-label="Groups"
+                alt="Profile Dashboard showing groups"
+                aria-hidden="true"
+              />
+              <p class="carousel-missing">
+                Add screenshots:<br />assets/screenshots/profile-*.webp
+              </p>
+              <div class="profile-label" aria-hidden="true">
+                Reviewed titles
+              </div>
+              <div
+                class="carousel-controls"
+                role="group"
+                aria-label="Carousel controls"
+              >
+                <button
+                  type="button"
+                  class="carousel-previous"
+                  aria-label="Previous screenshot"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  class="carousel-toggle"
+                  aria-label="Pause slideshow"
+                >
+                  Pause
+                </button>
+                <button
+                  type="button"
+                  class="carousel-next"
+                  aria-label="Next screenshot"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Demo: keep a short, repeatable path and preserve screenshots as fallback evidence. -->
+      <section
+        class="slide"
+        data-section="Live demo"
+        aria-labelledby="slide-title-9"
+      >
+        <div class="content">
+          <p class="eyebrow">08 · Demonstration</p>
+          <h2 id="slide-title-9">Live demo</h2>
+          <div class="shot-layout">
+            <ol class="steps">
+              <li>Search for a title</li>
+              <li>Open title details</li>
+              <li>Add a review or favourite</li>
+              <li>Demonstrate a group interaction</li>
+            </ol>
+            <div>
+              <p class="lead">
+                Keep the path short and use prepared test data.
+              </p>
+              <div class="actions">
+                <a
+                  class="button"
+                  href="http://localhost:5173/"
+                  target="_blank"
+                  rel="noopener"
+                  >Open application ↗</a
+                >
+
+                <a
+                  class="button repository-link"
+                  href="https://github.com/tvt25kmo-group7/tvt25kmo-group7-movie-app"
+                  target="_blank"
+                  rel="noopener"
+                  >Open repository ↗</a
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Quality: claims on this slide should always match final repository evidence. -->
+      <section
+        class="slide"
+        data-section="Quality"
+        aria-labelledby="slide-title-10"
+      >
+        <div class="content">
+          <p class="eyebrow">09 · Quality</p>
+          <h2 id="slide-title-10">Built to be dependable</h2>
+          <div class="grid three">
+            <article class="card">
+              <h3>Security</h3>
+              <p>
+                Server-side validation and authorisation. Secrets remain outside
+                the browser and repository.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Testing</h3>
+              <p>
+                11 test suites and 67 tests pass, including positive and
+                negative REST API cases.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Delivery</h3>
+              <p>
+                Short-lived Jira branches, pull requests, CI checks and
+                integration testing.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reflection: focus on concrete decisions, outcomes and learning. -->
+      <section
+        class="slide"
+        data-section="Lessons"
+        aria-labelledby="slide-title-11"
+      >
+        <div class="content">
+          <p class="eyebrow">10 · Learning</p>
+          <h2 id="slide-title-11">Challenges & lessons</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Technical challenge</h3>
+              <p>
+                We built backend features in parallel, but our routing
+                approaches did not match.
+              </p>
+              <p>
+                <strong>Lesson:</strong> We aligned the new route with the
+                existing Node.js handler structure.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Teamwork challenge</h3>
+              <p>
+                Finding shared meeting times was sometimes difficult. Parallel
+                work also caused conflicts when several people changed the same
+                files.
+              </p>
+              <p>
+                <strong>Lesson:</strong> We needed clearer coordination before
+                editing shared code.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section
+        class="slide"
+        data-section="Reflection"
+        aria-labelledby="slide-title-12"
+      >
+        <div class="content">
+          <p class="eyebrow">11 · Personal reflection</p>
+          <h2 id="slide-title-12">What we learned</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Marianna</h3>
+              <p>
+                <span class="todo"
+                  >One personal challenge, lesson or next-time improvement</span
+                >
+              </p>
+            </article>
+            <article class="card">
+              <h3>Jani</h3>
+              <p>
+                My biggest challenge was integrating backend code built with
+                different routing approaches. I learned to check the existing
+                architecture before adding a new route.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Emil</h3>
+              <p>
+                <span class="todo"
+                  >One personal challenge, lesson or next-time improvement</span
+                >
+              </p>
+            </article>
+            <article class="card">
+              <h3>Joona</h3>
+              <p>
+                <span class="todo"
+                  >One personal challenge, lesson or next-time improvement</span
+                >
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <!-- Closing: finish with one result, one next step and a clear invitation for questions. -->
+      <section
+        class="slide"
+        data-section="Conclusion"
+        aria-labelledby="slide-title-13"
+      >
+        <div class="content">
+          <p class="eyebrow">12 · Conclusion</p>
+          <h2 id="slide-title-13">
+            Working software.<br /><span class="accent">Shared learning.</span>
+          </h2>
+          <p class="lead">
+            <span class="todo">Final thoughts</span> ·
+            <span class="todo">Future improvements</span>
+          </p>
+          <p class="quote">Thank you. Questions?</p>
+        </div>
+      </section>
+    </main>
+    <div class="footer">
+      <span id="counter">1 / 13</span>
+      <div class="controls">
+        <button id="prev" aria-label="Previous slide">←</button
+        ><button id="helpBtn" aria-label="Keyboard help">?</button
+        ><button id="home" aria-label="First slide">⌂</button
+        ><button id="full" aria-label="Fullscreen">⛶</button
+        ><button id="next" aria-label="Next slide">→</button>
+      </div>
+    </div>
+    <div
+      class="progress"
+      id="progress"
+      role="progressbar"
+      aria-label="Presentation progress"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="8"
+      aria-valuetext="Slide 1 of 13"
+    ></div>
+    <div
+      class="help"
+      id="help"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="helpTitle"
+      aria-describedby="helpDescription"
+    >
+      <div class="card">
+        <h3 id="helpTitle">Controls</h3>
+        <p id="helpDescription">
+          <span class="kbd">←</span> <span class="kbd">→</span> change slide ·
+          <span class="kbd">F</span> fullscreen ·
+          <span class="kbd">⌂</span> first slide ·
+          <span class="kbd">Home</span>/<span class="kbd">End</span> jump ·
+          <span class="kbd">Esc</span> close
+        </p>
+        <button class="button" id="closeHelp">Close</button>
+      </div>
+    </div>
+    <script>
+      // The controller keeps navigation state in the URL so any slide can be opened directly.
+      (() => {
+        const slides = [...document.querySelectorAll(".slide")];
+        const counter = document.querySelector("#counter");
+        const progress = document.querySelector("#progress");
+        const sectionLabel = document.querySelector("#sectionLabel");
+        const announcer = document.querySelector("#announcer");
+        const help = document.querySelector("#help");
+        const helpCloseButton = document.querySelector("#closeHelp");
+        const deck = document.querySelector("#deck");
+        const footer = document.querySelector(".footer");
+        const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+        const progressPercent = (index) =>
+          Math.round(((index + 1) / slides.length) * 100);
+        let current = 0;
+        let helpOpener = null;
+
+        function show(target, { updateUrl = true } = {}) {
+          const next = Math.max(0, Math.min(slides.length - 1, target));
+          const direction =
+            next >= current ? "enter-forward" : "enter-backward";
+          current = next;
+          slides.forEach((slide, index) => {
+            const isActive = index === current;
+            slide.classList.remove("active", "enter-forward", "enter-backward");
+            slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+            if (!isActive) return;
+            slide.classList.add("active", direction);
+          });
+          const label = slides[current].dataset.section ?? "Presentation";
+          counter.textContent = `${current + 1} / ${slides.length}`;
+          sectionLabel.textContent = label;
+          // Only the slide name is announced, not the whole slide content.
+          announcer.textContent = `Slide ${current + 1} of ${slides.length}: ${label}`;
+          const percent = progressPercent(current);
+          progress.style.width = `${percent}%`;
+          progress.setAttribute("aria-valuenow", percent);
+          progress.setAttribute(
+            "aria-valuetext",
+            `Slide ${current + 1} of ${slides.length}`,
+          );
+          document.title = `${current + 1}/${slides.length} · Movie Web Application`;
+          if (updateUrl)
+            history.replaceState(null, "", `#slide-${current + 1}`);
+        }
+
+        const next = () => show(current + 1);
+        const previous = () => show(current - 1);
+        const toggleFullscreen = () =>
+          document.fullscreenElement ?
+            document.exitFullscreen()
+          : document.documentElement.requestFullscreen();
+        const openHelp = () => {
+          if (help.classList.contains("open")) return;
+          helpOpener = document.activeElement;
+          help.classList.add("open");
+          deck.inert = true;
+          footer.inert = true;
+          helpCloseButton.focus();
+        };
+        const closeHelp = () => {
+          if (!help.classList.contains("open")) return;
+          help.classList.remove("open");
+          deck.inert = false;
+          footer.inert = false;
+          if (helpOpener instanceof HTMLElement) helpOpener.focus();
+        };
+
+        const buttonActions = {
+          "#prev": previous,
+          "#home": () => show(0),
+          "#helpBtn": openHelp,
+          "#full": toggleFullscreen,
+          "#next": next,
+          "#closeHelp": closeHelp,
+        };
+        for (const [selector, action] of Object.entries(buttonActions)) {
+          document.querySelector(selector).addEventListener("click", action);
+        }
+
+        const keyActions = {
+          ArrowRight: next,
+          PageDown: next,
+          " ": next,
+          ArrowLeft: previous,
+          PageUp: previous,
+          Home: () => show(0),
+          End: () => show(slides.length - 1),
+          f: toggleFullscreen,
+          "?": openHelp,
+        };
+        document.addEventListener("keydown", (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          if (help.classList.contains("open")) {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              closeHelp();
+              return;
+            }
+            if (e.key === "Tab") {
+              const focusable = [
+                ...help.querySelectorAll(
+                  'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+                ),
+              ];
+              const first = focusable[0];
+              const last = focusable.at(-1);
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+            return;
+          }
+          // Space on a focused button should press that button, not change slide.
+          if (
+            e.key === " " &&
+            e.target instanceof Element &&
+            e.target.closest("button")
+          )
+            return;
+          const action =
+            keyActions[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+          if (!action) return;
+          e.preventDefault();
+          action();
+        });
+
+        let touchStartX = null;
+        document.addEventListener(
+          "touchstart",
+          (e) => (touchStartX = e.changedTouches[0].clientX),
+          { passive: true },
+        );
+        document.addEventListener(
+          "touchend",
+          (e) => {
+            if (touchStartX === null) return;
+            const distance = e.changedTouches[0].clientX - touchStartX;
+            if (Math.abs(distance) > 50) distance < 0 ? next() : previous();
+            touchStartX = null;
+          },
+          { passive: true },
+        );
+        for (const box of document.querySelectorAll("[data-image]")) {
+          const img = new Image();
+          img.className = "screenshot";
+          img.alt = "Application screenshot";
+          img.onload = () => box.replaceWith(img);
+          img.src = box.dataset.image;
+        }
+
+        // The carousel runs only while its slide is visible and motion is allowed.
+        const carousels = [...document.querySelectorAll(".profile-carousel")];
+        for (const carousel of carousels) {
+          const frames = [...carousel.querySelectorAll(".profile-frame")];
+          const label = carousel.querySelector(".profile-label");
+          const pauseButton = carousel.querySelector(".carousel-toggle");
+          let frameIndex = 0;
+          let timer;
+          let isPaused = false;
+          pauseButton.disabled = reducedMotion.matches;
+          if (reducedMotion.matches) {
+            pauseButton.textContent = "Paused";
+            pauseButton.setAttribute(
+              "aria-label",
+              "Slideshow paused because reduced motion is enabled",
+            );
+          }
+
+          // Without any screenshots the carousel falls back to the dashed placeholder style.
+          const markMissingFrame = (frame) => {
+            frame.dataset.missing = "true";
+            if (frames.every((item) => item.dataset.missing)) {
+              carousel.classList.add("is-missing");
+              stop();
+            }
+          };
+          const showFrame = (index) => {
+            frameIndex = index % frames.length;
+            frames.forEach((frame, position) =>
+              frame.classList.toggle("active", position === frameIndex),
+            );
+            frames.forEach((frame, position) =>
+              frame.setAttribute(
+                "aria-hidden",
+                position === frameIndex ? "false" : "true",
+              ),
+            );
+            label.textContent = frames[frameIndex].dataset.label;
+          };
+          const stop = () => {
+            clearInterval(timer);
+            timer = undefined;
+          };
+          const start = () => {
+            stop();
+            carousel.setAttribute(
+              "aria-live",
+              isPaused || reducedMotion.matches ? "polite" : "off",
+            );
+            if (
+              carousel.classList.contains("is-missing") ||
+              isPaused ||
+              reducedMotion.matches ||
+              document.hidden ||
+              !carousel.closest(".slide")?.classList.contains("active")
+            )
+              return;
+            timer = setInterval(
+              () => showFrame(frameIndex + 1),
+              Number(carousel.dataset.interval),
+            );
+          };
+          const togglePause = () => {
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? "Play" : "Pause";
+            pauseButton.setAttribute(
+              "aria-label",
+              isPaused ? "Resume slideshow" : "Pause slideshow",
+            );
+            start();
+          };
+          carousel
+            .querySelector(".carousel-previous")
+            .addEventListener("click", () =>
+              showFrame((frameIndex - 1 + frames.length) % frames.length),
+            );
+          carousel
+            .querySelector(".carousel-next")
+            .addEventListener("click", () => showFrame(frameIndex + 1));
+          pauseButton.addEventListener("click", togglePause);
+          carousel.addEventListener("focusin", (event) => {
+            if (
+              reducedMotion.matches ||
+              event.target === pauseButton ||
+              isPaused
+            )
+              return;
+            isPaused = true;
+            pauseButton.textContent = "Play";
+            pauseButton.setAttribute("aria-label", "Resume slideshow");
+            start();
+          });
+          reducedMotion.addEventListener("change", ({ matches }) => {
+            pauseButton.disabled = matches;
+            if (matches) {
+              isPaused = true;
+              pauseButton.textContent = "Paused";
+              pauseButton.setAttribute(
+                "aria-label",
+                "Slideshow paused because reduced motion is enabled",
+              );
+            } else {
+              isPaused = false;
+              pauseButton.textContent = "Pause";
+              pauseButton.setAttribute("aria-label", "Pause slideshow");
+            }
+            start();
+          });
+          for (const frame of frames) {
+            frame.addEventListener("error", () => markMissingFrame(frame));
+            if (frame.complete && frame.naturalWidth === 0)
+              markMissingFrame(frame);
+          }
+          new MutationObserver(start).observe(carousel.closest(".slide"), {
+            attributes: true,
+            attributeFilter: ["class"],
+          });
+          document.addEventListener("visibilitychange", start);
+          start();
+        }
+        // A restrained ambient highlight adds depth without becoming part of the content.
+        const spotlight = document.querySelector(".spotlight");
+        document.addEventListener(
+          "pointermove",
+          ({ clientX, clientY }) => {
+            if (reducedMotion.matches) return;
+            spotlight.style.left = `${clientX}px`;
+            spotlight.style.top = `${clientY}px`;
+          },
+          { passive: true },
+        );
+        const match = location.hash.match(/slide-(\d+)/);
+        show(match ? Number(match[1]) - 1 : 0, { updateUrl: false });
+      })();
+    </script>
+  </body>
+</html>

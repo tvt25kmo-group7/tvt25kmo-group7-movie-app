@@ -74,7 +74,7 @@ export async function handleFavoriteRoutes(req, res) {
     }
     
   // POST /api/favorites
-  if (req.method === "POST" /*&& isFavoritesRoute*/) {
+  if (req.method === "POST") {
     try {
       const { tmdbId, mediaType } = await readJsonBody(req);
 

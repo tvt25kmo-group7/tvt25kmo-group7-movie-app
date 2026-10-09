@@ -35,6 +35,46 @@
   border: 1px solid var(--color-border);
 }
 
+.navbar__links .navbar__profile {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.5rem;
+
+  width: 2.5rem;
+  height: 2.5rem;
+
+  font-size: 0.875rem;
+  font-weight: 700;
+
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+
+  border-radius: 50%;
+}
+
+.navbar__links .navbar__theme-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.5rem;
+
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+
+  font-size: 1.25rem;
+  line-height: 1;
+
+  background: var(--color-surface-secondary);
+  color: var(--color-text);
+
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+}
+
+.navbar__links .navbar__theme-toggle:hover {
+  background: var(--color-border);
+}
+
 .navbar__links .navbar__favorites {
   padding: 0;
   border: 0;
@@ -75,5 +115,10 @@
   .navbar__links button {
     width: 100%;
     text-align: left;
+  }
+
+  .navbar__links .navbar__theme-toggle {
+    align-self: flex-end;
+    width: 2.5rem;
   }
 }

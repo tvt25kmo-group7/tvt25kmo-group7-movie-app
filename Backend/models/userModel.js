@@ -78,7 +78,7 @@ async function clearRefreshToken(refreshToken) {
 async function findUserById(userId) {
   const result = await database.query(
     `
-      SELECT id, email, username
+      SELECT id, email, username, created_at AS "createdAt"
       FROM users
       WHERE id = $1
     `,
