@@ -151,6 +151,26 @@
   overflow: hidden;
 }
 
+.profile-groups {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profile-group-link {
+  display: block;
+  padding: 1rem;
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.profile-group-link:hover,
+.profile-group-link:focus-visible {
+  border-color: var(--color-primary);
+}
+
 @media (max-width: 768px) {
   .profile-header {
     flex-direction: column;
