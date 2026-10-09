@@ -383,6 +383,55 @@ export default function Home({}) {
           </div>
         )}
       </section>
+
+      <section className="shared-favorites">
+        <h2>Shared Favorites</h2>
+
+        {sharedFavorites.length > 0 && (
+          <div className="movie-grid">
+            <button
+              className="carousel-button"
+              onClick={() => previousCarousel(sharedFavoritesIndex, sharedFavorites.length, setSharedFavoritesIndex)}
+            >
+              &lt;
+            </button>
+
+            <div className="movie-grid__frame">
+              <div
+                className="movie-grid__viewport"
+                style={{
+                  '--carousel-index': sharedFavoritesIndex,
+                }}
+              >
+                {sharedFavorites.map((sharedFavorite) => {
+                  const shareUrl =
+                    `${window.location.origin}/favorites/${sharedFavorite.favorites_share_token}`;
+
+                  return (
+                    <div
+                      className="shared-favorite-card"
+                      key={sharedFavorite.favorites_share_token}
+                    >
+                      <h3>{sharedFavorite.username}</h3>
+
+                      <a href={shareUrl}>
+                        {shareUrl}
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              className="carousel-button"
+              onClick={() => nextCarousel(sharedFavoritesIndex, sharedFavorites.length, setSharedFavoritesIndex)}
+            >
+              &gt;
+            </button>
+          </div>
+        )}
+      </section>
     </section>
   );
 }
