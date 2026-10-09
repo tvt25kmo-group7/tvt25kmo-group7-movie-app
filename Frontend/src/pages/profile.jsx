@@ -1,14 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MovieCard from '../components/movieCard';
 import './profile.css';
+
+function formatMemberSince(createdAt) {
+  if (!createdAt) {
+    return '—';
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, authenticatedFetch, logout } = useAuth();
 
-  const [activeSection, setActiveSection] = useState('rated');
+  const [activeSection, setActiveSection] = useState('favorites');
   const [account, setAccount] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -21,6 +38,9 @@ export default function Profile() {
   const [favorites, setFavorites] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [favoritesError, setFavoritesError] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState('');
 
 
   // Haetaan tiedot vain kirjautuneen käyttäjän vaihtuessa.
@@ -63,6 +83,50 @@ export default function Profile() {
 
     // authenticatedFetch muuttuu tokenin vaihtuessa, mutta haluamme
     // hakea tiedot vain käyttäjän ID:n vaihtuessa.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadGroups() {
+      setGroupsLoading(true);
+      setGroupsError('');
+
+      try {
+        const response = await authenticatedFetch('/api/groups/mine');
+
+        if (!response.ok) {
+          throw new Error(`Groups request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setGroups(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Groups request failed:', error);
+          setGroupsError('Could not load your groups.');
+        }
+      } finally {
+        if (!cancelled) {
+          setGroupsLoading(false);
+        }
+      }
+    }
+
+    loadGroups();
+
+    return () => {
+      cancelled = true;
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -255,14 +319,14 @@ export default function Profile() {
                 className={`profile-stat ${activeSection === 'groups' ? 'profile-stat--active' : ''}`}
                 onClick={() => setActiveSection('groups')}
               >
-                <strong>4</strong>
+                <strong>{groups.length}</strong>
                 <span>Groups</span>
               </button>
             </div>
 
             <div className="profile-member">
               <span>Member since</span>
-              <strong>October 2023</strong>
+              <strong>{formatMemberSince(account?.createdAt)}</strong>
             </div>
           </section>
 
@@ -347,7 +411,24 @@ export default function Profile() {
           {activeSection === 'groups' && (
             <>
               <h2>Groups</h2>
-              <p>Your groups will be shown here.</p>
+
+              {groupsLoading && <p>Loading your groups...</p>}
+              {groupsError && <p role="alert">{groupsError}</p>}
+              {!groupsLoading && !groupsError && groups.length === 0 && (
+                <p>You are not a member of any groups yet.</p>
+              )}
+
+              <div className="profile-groups">
+                {groups.map(group => (
+                  <Link
+                    key={group.id}
+                    to={`/groups/${group.id}`}
+                    className="profile-group-link"
+                  >
+                    <span>{group.name}</span>
+                  </Link>
+                ))}
+              </div>
             </>
           )}
         </section>
