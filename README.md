@@ -1,14 +1,175 @@
 # TVT25KMO Group 7 Movie App
 
-## Setup instructions
+Movie App is a full-stack web application for discovering movies and TV shows, managing favorites, publishing reviews and sharing media with movie groups.
 
-### Requirements
+Movie and TV show information is retrieved from TMDB. User accounts, favorites, reviews, groups and memberships are stored in PostgreSQL.
 
-- Docker Desktop for local development
+This application was developed as a group project by second-year Information and Communications Technology students from Group 7 (TVT25KMO) at Oulu University of Applied Sciences.
+
+## How the Application Works
+
+Visitors can browse currently playing movies, search for movies and TV shows, view detailed media information, read reviews and browse available groups without creating an account.
+
+Registered users can save favorites, share their favorite lists, publish reviews, create groups and request membership in existing groups. Accepted group members can view the group’s shared media and share movies or TV shows with the group.
+
+Group owners can manage membership requests, remove members and delete their groups.
+
+## Features
+
+### Public Features
+
+- Browse currently playing movies
+- Search for movies and TV shows
+- Filter and load additional search results
+- View movie and TV show details
+- Read reviews
+- Browse available groups
+- Open shared favorite lists
+- Switch between light and dark themes
+
+### Authenticated User Features
+
+- Register and log in
+- Restore the session with a refresh token
+- View and manage favorites
+- Create a shareable favorites link
+- Publish movie and TV show reviews
+- Create groups
+- Request group membership
+- View accepted group content
+- Leave a group
+- Share movies and TV shows with a group
+- View profile information
+- Delete the user account
+
+### Group Owner Features
+
+- View pending membership requests
+- Approve or reject membership requests
+- View current group members
+- Remove members
+- Delete the group
+
+## Screenshots
+
+### Search
+
+![Movie and TV show search](Presentation/assets/screenshots/search.webp)
+
+### Movie and TV Show Details
+
+![Movie details](Presentation/assets/screenshots/details.webp)
+
+### Group Page
+
+![Group page](Presentation/assets/screenshots/group.webp)
+
+Additional screenshots are available in the `Presentation/assets/screenshots/` directory.
+
+## Design and Presentation
+
+The original user interface was designed in Figma and adapted during implementation as the application features developed.
+
+### Original UI Design
+
+![Original Figma UI design](Presentation/assets/screenshots/figma-design.webp)
+
+The project presentation is located in the `Presentation/` directory.
+
+Start the presentation from the project root:
+
+```bash
+npx --yes serve Presentation -l 8080
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
+
+Stop the presentation server with `Ctrl+C`.
+
+Additional instructions are available in [Presentation/README.md](Presentation/README.md).
+
+## Technology Stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React and Vite |
+| Backend | Node.js HTTP server |
+| Database | PostgreSQL |
+| Authentication | JWT, refresh tokens and bcrypt |
+| External data | TMDB API |
+| Containers | Docker and Docker Compose |
+| Testing | Jest and Supertest |
+| CI/CD | GitHub Actions |
+| UI design | Figma |
+
+## Architecture
+
+```text
+React frontend
+    |
+    | HTTP / JSON
+    v
+Node.js backend
+    |
+    +---- PostgreSQL
+    |
+    +---- TMDB API
+```
+
+The frontend communicates with the application backend through `/api` routes. TMDB credentials remain on the backend and are not exposed to the browser.
+
+The backend is divided into routes, services and models:
+
+- routes handle URLs, HTTP methods, authentication and responses
+- services contain validation and business logic
+- models execute parameterized PostgreSQL queries
+
+## Database Model
+
+The application data is stored in PostgreSQL. The database model connects users with favorites, reviews, groups, group memberships and shared group media.
+
+![Database ER diagram](Presentation/assets/screenshots/er-diagram.webp)
+
+## Project Structure
+
+```text
+.
+├── Backend/
+│   ├── auth/
+│   ├── helpers/
+│   ├── migrations/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── tests/
+│   ├── app.js
+│   └── schema.sql
+├── Frontend/
+│   └── src/
+│       ├── components/
+│       ├── context/
+│       ├── pages/
+│       ├── app.jsx
+│       └── styles.css
+├── Presentation/
+├── .github/workflows/
+└── docker-compose.yml
+```
+
+## Requirements
+
+Local development requires:
+
+- Docker Desktop
 - Git
-- An Ubuntu VM with Docker and Git installed for deployment
+- Node.js for running local utility and test commands
+- a TMDB API read access token
 
-### Local setup
+## Local Setup
 
 Clone the repository and enter the project directory:
 
@@ -17,8 +178,7 @@ git clone https://github.com/tvt25kmo-group7/tvt25kmo-group7-movie-app.git
 cd tvt25kmo-group7-movie-app
 ```
 
-Create a file named `Backend/.env`. Add the following variables and replace
-the example values with your own:
+Create a file named `Backend/.env` and add:
 
 ```dotenv
 DB_NAME=moviedb
@@ -29,18 +189,17 @@ JWT_SECRET_KEY=your_first_random_secret
 JWT_REFRESH_SECRET=your_second_random_secret
 ```
 
-**Generate the two JWT secrets separately.** Run this command in a terminal:
+Generate the two JWT secrets separately:
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-Copy its output into `JWT_SECRET_KEY`. Run the **same command again** and copy
-the new output into `JWT_REFRESH_SECRET`. The two values must be different.
+Run the command twice. Store the first value in `JWT_SECRET_KEY` and the second value in `JWT_REFRESH_SECRET`.
 
-These are signing secrets, not user tokens. The backend creates access and
-refresh tokens automatically when a user logs in. Never commit `Backend/.env`
-or share the secrets.
+The values must be different. They are signing secrets, not user access tokens.
+
+Never commit `Backend/.env` or expose its contents.
 
 Start the application from the project root:
 
@@ -50,80 +209,149 @@ docker compose --env-file Backend/.env up -d --build
 
 The local services are available at:
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
-- PostgreSQL: localhost:5433
+| Service | Address |
+| --- | --- |
+| Frontend | [http://localhost:5173](http://localhost:5173/) |
+| Backend | [http://localhost:5000](http://localhost:5000/) |
+| PostgreSQL | localhost:5433 |
 
-**Existing database:** If your `users` table was created before refresh tokens
-were introduced, run the following SQL statement against that database:
+Check the running containers:
 
-```sql
-ALTER TABLE users
-ADD COLUMN IF NOT EXISTS refresh_token TEXT;
+```bash
+docker compose --env-file Backend/.env ps
 ```
 
-The updated `Backend/schema.sql` contains this column for databases created
-using the new schema. Do not delete an existing database to add the column.
+View backend logs:
 
-PostgreSQL data is stored in the Docker volume `postgres_movie_data`.
-Rebuilding application containers does not delete that data. Do not remove
-the volume unless you intentionally want to delete the database.
+```bash
+docker logs movie-backend
+```
 
-**Schema changes on a long-lived database:** `schema.sql` only uses
-`CREATE TABLE IF NOT EXISTS`, so it does nothing on tables that already exist,
-even if a column was added later. Add a new idempotent file under
-`Backend/migrations/` (e.g. `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...`) for
-any change that must reach an existing production database. The deploy
-workflow runs every file in that folder after `schema.sql` and prints a diff
-if the live database schema still doesn't match `schema.sql` + migrations.
+View frontend logs:
 
-### GitHub Actions deployment
+```bash
+docker logs movie-frontend
+```
 
-The workflow in `.github/workflows/deploy.yml` runs only after a push to `main`.
+Stop the application:
 
-In GitHub, open **Settings > Secrets and variables > Actions > New repository secret** and add:
+```bash
+docker compose --env-file Backend/.env down
+```
 
-| Name | Value |
-| --- | --- |
-| `SERVER_HOST` | The Ubuntu VM public IP address |
-| `SSH_PRIVATE_KEY` | The private SSH key for the `ubuntu` user |
-| `DB_NAME` | Your database name |
-| `DB_USER` | Your database username |
-| `DB_PASSWORD` | The PostgreSQL password |
-| `TMDB_API_TOKEN` | TMDB api password |
-| `JWT_SECRET_KEY` | Random secret for signing access tokens |
-| `JWT_REFRESH_SECRET` | Random secret for signing refresh tokens (must differ from `JWT_SECRET_KEY`) |
+Stopping or rebuilding the application containers does not delete the database volume.
 
-Keep the database password in **Secrets**, not ordinary Variables. The workflow passes these values to the VM without storing them in the source code.
+## Database and Migrations
 
-The VM must allow inbound TCP traffic for:
-
-- `22` for SSH deployment
-- `5173` for the frontend
-- `5000` for the backend, if it must be accessed externally
-- `5432` only if PostgreSQL must be accessed externally; otherwise keep it closed
-
-After a merge or push to `main`, check the workflow in the repository's **Actions** tab. The deployed frontend address is:
+New databases are initialized using:
 
 ```text
-http://<VM_PUBLIC_IP>:5173
+Backend/schema.sql
 ```
 
+Changes required by existing databases are stored in:
 
+```text
+Backend/migrations/
+```
 
-The deployment removes and rebuilds only the backend and frontend containers. The `movie-db` container and its `postgres_movie_data` volume are kept so existing database data remains available.
+Migration files use idempotent SQL where possible so that they can be applied safely more than once.
 
+The deployment workflow applies the schema and migration files to the deployed database.
 
-## Git Branching Model
+PostgreSQL data is stored in the Docker volume:
 
-- Create a short-lived branch for each Jira item.
-- Name branches using the Jira key, for example `SCRUM-42`.
-- Each task branch must contain changes for only one Jira item.
-- Create task branches from the latest `integration` branch.
-- Rebase task branches onto the latest `integration` branch before merging.
-- Use squash merge for pull requests.
-- Pull requests into `integration` do not require approval, but automated checks must pass.
-- Delete task branches after merging.
-- Protect `main` from direct pushes.
-- Code must be reviewed and tested before merging `integration` into `main`.
-- Automated checks must pass before merging into `main`.
+```text
+postgres_movie_data
+```
+
+Do not remove the volume unless you intentionally want to delete the local database data.
+
+The main database entities include:
+
+- users
+- favorites
+- reviews
+- groups
+- group memberships
+- group media
+
+## Authentication
+
+Access tokens are valid for 15 minutes and are sent in the `Authorization` request header:
+
+```http
+Authorization: Bearer <access-token>
+```
+
+Refresh tokens are valid for seven days. They are stored in the database and sent to the browser in an HttpOnly cookie.
+
+The frontend keeps the access token in React state. When the application starts, it attempts to restore the session through the refresh endpoint.
+
+Protected frontend requests use a shared `authenticatedFetch` function. If a request returns HTTP 401, the frontend attempts to refresh the access token and retries the original request once.
+
+## Main API Areas
+
+The backend provides API routes for:
+
+| Area | Route prefix |
+| --- | --- |
+| Users and authentication | `/api/users` |
+| Movies and TV shows | `/api/movies` |
+| Favorites | `/api/favorites` |
+| Reviews | `/api/reviews` |
+| Groups | `/api/groups` |
+
+User identity and permissions are determined from verified JWT tokens. Clients cannot select another user by submitting a user ID in protected request bodies.
+
+Detailed endpoint documentation, example payloads and validation notes are tracked in Jira as part of the project documentation.
+
+## Testing
+
+The backend test suite can be run with:
+
+```bash
+npm --prefix Backend test
+```
+
+Detailed test cases, validation notes and bug-fix tracking are documented in Jira rather than in this repository README.
+
+## Deployment
+
+The deployment workflow is defined in:
+
+```text
+.github/workflows/deploy.yml
+```
+
+Deployment runs after changes are merged or pushed to `main`.
+
+The workflow requires the following GitHub Actions secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `SERVER_HOST` | Ubuntu server public IP address |
+| `SSH_PRIVATE_KEY` | Private SSH key used for deployment |
+| `DB_NAME` | PostgreSQL database name |
+| `DB_USER` | PostgreSQL user |
+| `DB_PASSWORD` | PostgreSQL password |
+| `TMDB_API_TOKEN` | TMDB API read access token |
+| `JWT_SECRET_KEY` | Access-token signing secret |
+| `JWT_REFRESH_SECRET` | Refresh-token signing secret |
+
+`JWT_SECRET_KEY` and `JWT_REFRESH_SECRET` must contain different secure values.
+
+The deployment rebuilds the application containers while preserving the PostgreSQL container and its data volume.
+
+Secrets must be stored in GitHub Actions Secrets and must not be committed to the repository.
+
+## Project Team
+
+| Name | Role |
+| --- | --- |
+| Marianna Taavitsainen | Product Owner and Developer |
+| Jani Rekinen | Scrum Master and Developer |
+| Emil Koivunen | Developer |
+| Joona Louhisalmi | Developer |
+
+The developers shared responsibility for application design, implementation, testing, integration and documentation.
