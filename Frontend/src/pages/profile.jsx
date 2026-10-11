@@ -340,7 +340,7 @@ export default function Profile() {
 
             <button 
             type="button" 
-            className="button-secondary" 
+            className="button-danger"
             onClick={handleDeleteAccount} 
             disabled={isDeleting}>
               {isDeleting ? 'Deleting...' : 'Delete Account'}
