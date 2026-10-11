@@ -132,7 +132,7 @@ The backend is divided into routes, services and models:
 
 The application data is stored in PostgreSQL. The database model connects users with favorites, reviews, groups, group memberships and shared group media.
 
-![Database ER diagram](Presentation/assets/screenshots/er-diagram.webp)
+![Database ER diagram](Presentation/assets/screenshots/er-diagram.png)
 
 ## Project Structure
 
