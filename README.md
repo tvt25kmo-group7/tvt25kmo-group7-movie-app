@@ -8,9 +8,9 @@ This application was developed as a group project by second-year Information and
 
 ## How the Application Works
 
-Visitors can browse currently playing movies, search for movies and TV shows, view detailed media information, read reviews and browse available groups without creating an account.
+Visitors can browse currently playing movies, search for movies and TV shows, view media details, read reviews and browse available groups without creating an account.
 
-Registered users can save favorites, share their favorite lists, publish reviews, create groups and request membership in existing groups. Accepted group members can view the group’s shared media and share movies or TV shows with the group.
+Registered users can save favorites, publish reviews, share their favorite lists, create groups and request membership in existing groups. Accepted group members can view and share movies and TV shows within their groups.
 
 Group owners can manage membership requests, remove members and delete their groups.
 
@@ -30,7 +30,7 @@ Group owners can manage membership requests, remove members and delete their gro
 ### Authenticated User Features
 
 - Register and log in
-- Restore the session with a refresh token
+- Restore the session using a refresh token
 - View and manage favorites
 - Create a shareable favorites link
 - Publish movie and TV show reviews
@@ -66,32 +66,6 @@ Group owners can manage membership requests, remove members and delete their gro
 
 Additional screenshots are available in the `Presentation/assets/screenshots/` directory.
 
-## Design and Presentation
-
-The original user interface was designed in Figma and adapted during implementation as the application features developed.
-
-### Original UI Design
-
-![Original Figma UI design](Presentation/assets/screenshots/figma-design.webp)
-
-The project presentation is located in the `Presentation/` directory.
-
-Start the presentation from the project root:
-
-```bash
-npx --yes serve Presentation -l 8080
-```
-
-Then open:
-
-```text
-http://localhost:8080
-```
-
-Stop the presentation server with `Ctrl+C`.
-
-Additional instructions are available in [Presentation/README.md](Presentation/README.md).
-
 ## Technology Stack
 
 | Area | Technology |
@@ -120,9 +94,9 @@ Node.js backend
     +---- TMDB API
 ```
 
-The frontend communicates with the application backend through `/api` routes. TMDB credentials remain on the backend and are not exposed to the browser.
+The frontend communicates with the backend through `/api` routes. TMDB requests are handled by the backend, so the TMDB API token is not exposed to the browser.
 
-The backend is divided into routes, services and models:
+The backend follows a routes, services and models structure:
 
 - routes handle URLs, HTTP methods, authentication and responses
 - services contain validation and business logic
@@ -130,144 +104,11 @@ The backend is divided into routes, services and models:
 
 ## Database Model
 
-The application data is stored in PostgreSQL. The database model connects users with favorites, reviews, groups, group memberships and shared group media.
+The application data is stored in PostgreSQL. The database model connects users with favorites, reviews, groups, group memberships and media shared with groups.
 
 ![Database ER diagram](Presentation/assets/screenshots/er-diagram.png)
 
-## Project Structure
-
-```text
-.
-├── Backend/
-│   ├── auth/
-│   ├── helpers/
-│   ├── migrations/
-│   ├── models/
-│   ├── routes/
-│   ├── services/
-│   ├── tests/
-│   ├── app.js
-│   └── schema.sql
-├── Frontend/
-│   └── src/
-│       ├── components/
-│       ├── context/
-│       ├── pages/
-│       ├── app.jsx
-│       └── styles.css
-├── Presentation/
-├── .github/workflows/
-└── docker-compose.yml
-```
-
-## Requirements
-
-Local development requires:
-
-- Docker Desktop
-- Git
-- Node.js for running local utility and test commands
-- a TMDB API read access token
-
-## Local Setup
-
-Clone the repository and enter the project directory:
-
-```bash
-git clone https://github.com/tvt25kmo-group7/tvt25kmo-group7-movie-app.git
-cd tvt25kmo-group7-movie-app
-```
-
-Create a file named `Backend/.env` and add:
-
-```dotenv
-DB_NAME=moviedb
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-TMDB_API_TOKEN=your_tmdb_api_token
-JWT_SECRET_KEY=your_first_random_secret
-JWT_REFRESH_SECRET=your_second_random_secret
-```
-
-Generate the two JWT secrets separately:
-
-```bash
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-```
-
-Run the command twice. Store the first value in `JWT_SECRET_KEY` and the second value in `JWT_REFRESH_SECRET`.
-
-The values must be different. They are signing secrets, not user access tokens.
-
-Never commit `Backend/.env` or expose its contents.
-
-Start the application from the project root:
-
-```bash
-docker compose --env-file Backend/.env up -d --build
-```
-
-The local services are available at:
-
-| Service | Address |
-| --- | --- |
-| Frontend | [http://localhost:5173](http://localhost:5173/) |
-| Backend | [http://localhost:5000](http://localhost:5000/) |
-| PostgreSQL | localhost:5433 |
-
-Check the running containers:
-
-```bash
-docker compose --env-file Backend/.env ps
-```
-
-View backend logs:
-
-```bash
-docker logs movie-backend
-```
-
-View frontend logs:
-
-```bash
-docker logs movie-frontend
-```
-
-Stop the application:
-
-```bash
-docker compose --env-file Backend/.env down
-```
-
-Stopping or rebuilding the application containers does not delete the database volume.
-
-## Database and Migrations
-
-New databases are initialized using:
-
-```text
-Backend/schema.sql
-```
-
-Changes required by existing databases are stored in:
-
-```text
-Backend/migrations/
-```
-
-Migration files use idempotent SQL where possible so that they can be applied safely more than once.
-
-The deployment workflow applies the schema and migration files to the deployed database.
-
-PostgreSQL data is stored in the Docker volume:
-
-```text
-postgres_movie_data
-```
-
-Do not remove the volume unless you intentionally want to delete the local database data.
-
-The main database entities include:
+The main database entities are:
 
 - users
 - favorites
@@ -278,72 +119,36 @@ The main database entities include:
 
 ## Authentication
 
-Access tokens are valid for 15 minutes and are sent in the `Authorization` request header:
+The application uses JWT access tokens and refresh tokens.
 
-```http
-Authorization: Bearer <access-token>
-```
+Access tokens are used to authenticate protected requests. Refresh tokens are stored in HttpOnly cookies and allow the frontend to restore an authenticated session.
 
-Refresh tokens are valid for seven days. They are stored in the database and sent to the browser in an HttpOnly cookie.
+Passwords are hashed with bcrypt before they are stored in the database.
 
-The frontend keeps the access token in React state. When the application starts, it attempts to restore the session through the refresh endpoint.
-
-Protected frontend requests use a shared `authenticatedFetch` function. If a request returns HTTP 401, the frontend attempts to refresh the access token and retries the original request once.
-
-## Main API Areas
-
-The backend provides API routes for:
-
-| Area | Route prefix |
-| --- | --- |
-| Users and authentication | `/api/users` |
-| Movies and TV shows | `/api/movies` |
-| Favorites | `/api/favorites` |
-| Reviews | `/api/reviews` |
-| Groups | `/api/groups` |
-
-User identity and permissions are determined from verified JWT tokens. Clients cannot select another user by submitting a user ID in protected request bodies.
-
-Detailed endpoint documentation, example payloads and validation notes are tracked in Jira as part of the project documentation.
+Protected backend routes verify the authenticated user and enforce group membership and ownership permissions.
 
 ## Testing
 
-The backend test suite can be run with:
+The backend test suite uses Jest and Supertest.
 
-```bash
-npm --prefix Backend test
-```
+Automated tests cover areas including:
 
-Detailed test cases, validation notes and bug-fix tracking are documented in Jira rather than in this repository README.
+- registration
+- login and logout
+- invalid credentials
+- authentication errors
+- user account deletion
+- review creation and retrieval
+- duplicate reviews
+- request validation
 
-## Deployment
+Important application flows have also been verified manually through the user interface.
 
-The deployment workflow is defined in:
+## Design and Presentation
 
-```text
-.github/workflows/deploy.yml
-```
+The original user interface was designed in Figma and adapted during implementation as the application features developed.
 
-Deployment runs after changes are merged or pushed to `main`.
-
-The workflow requires the following GitHub Actions secrets:
-
-| Secret | Purpose |
-| --- | --- |
-| `SERVER_HOST` | Ubuntu server public IP address |
-| `SSH_PRIVATE_KEY` | Private SSH key used for deployment |
-| `DB_NAME` | PostgreSQL database name |
-| `DB_USER` | PostgreSQL user |
-| `DB_PASSWORD` | PostgreSQL password |
-| `TMDB_API_TOKEN` | TMDB API read access token |
-| `JWT_SECRET_KEY` | Access-token signing secret |
-| `JWT_REFRESH_SECRET` | Refresh-token signing secret |
-
-`JWT_SECRET_KEY` and `JWT_REFRESH_SECRET` must contain different secure values.
-
-The deployment rebuilds the application containers while preserving the PostgreSQL container and its data volume.
-
-Secrets must be stored in GitHub Actions Secrets and must not be committed to the repository.
+The project presentation and additional screenshots are located in the `Presentation/` directory.
 
 ## Project Team
 
