@@ -66,6 +66,28 @@ Group owners can manage membership requests, remove members and delete their gro
 
 Additional screenshots are available in the `Presentation/assets/screenshots/` directory.
 
+## Design and Presentation
+
+The original user interface was designed in Figma and adapted during implementation as the application features developed.
+
+### Original UI Design
+
+![Original Figma UI design](Presentation/assets/screenshots/figma-design.webp)
+
+The project presentation is located in the `Presentation/` directory.
+
+Start the presentation from the project root:
+
+```bash
+npx --yes serve Presentation -l 8080
+```
+
+Open [http://localhost:8080](http://localhost:8080).
+
+Stop the presentation server with `Ctrl+C`.
+
+Additional instructions are available in [Presentation/README.md](Presentation/README.md).
+
 ## Technology Stack
 
 | Area | Technology |
@@ -116,6 +138,32 @@ The main database entities are:
 - groups
 - group memberships
 - group media
+
+## Project Structure
+
+```text
+.
+├── Backend/
+│   ├── auth/
+│   ├── helpers/
+│   ├── migrations/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── tests/
+│   ├── app.js
+│   └── schema.sql
+├── Frontend/
+│   └── src/
+│       ├── components/
+│       ├── context/
+│       ├── pages/
+│       ├── app.jsx
+│       └── styles.css
+├── Presentation/
+├── .github/workflows/
+└── docker-compose.yml
+```
 
 ## Authentication
 
