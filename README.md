@@ -2,25 +2,17 @@
 
 Movie App is a full-stack web application for discovering movies and TV shows, managing favorites, publishing reviews and sharing media with movie groups.
 
-Movie and TV show information is retrieved from TMDB. User accounts, favorites, reviews, groups and memberships are stored in PostgreSQL.
+Movie and TV show information is retrieved from TMDB. User accounts, favorites, reviews, groups, memberships and shared group media are stored in PostgreSQL.
 
 This application was developed as a group project by second-year Information and Communications Technology students from Group 7 (TVT25KMO) at Oulu University of Applied Sciences.
-
-## How the Application Works
-
-Visitors can browse currently playing movies, search for movies and TV shows, view media details, read reviews and browse available groups without creating an account.
-
-Registered users can save favorites, publish reviews, share their favorite lists, create groups and request membership in existing groups. Accepted group members can view and share movies and TV shows within their groups.
-
-Group owners can manage membership requests, remove members and delete their groups.
 
 ## Features
 
 ### Public Features
 
 - Browse currently playing movies
-- Search for movies and TV shows
-- Filter and load additional search results
+- Search and filter movies and TV shows
+- Load additional search results
 - View movie and TV show details
 - Read reviews
 - Browse available groups
@@ -30,15 +22,13 @@ Group owners can manage membership requests, remove members and delete their gro
 ### Authenticated User Features
 
 - Register and log in
-- Restore the session using a refresh token
 - View and manage favorites
 - Create a shareable favorites link
 - Publish movie and TV show reviews
 - Create groups
 - Request group membership
-- View accepted group content
+- View and share media within joined groups
 - Leave a group
-- Share movies and TV shows with a group
 - View profile information
 - Delete the user account
 
@@ -50,43 +40,36 @@ Group owners can manage membership requests, remove members and delete their gro
 - Remove members
 - Delete the group
 
-## Screenshots
+## Home Page
 
-### Search
+![Home](docs/assets/home.png)
 
-![Movie and TV show search](Presentation/assets/screenshots/search.webp)
-
-### Movie and TV Show Details
-
-![Movie details](Presentation/assets/screenshots/details.webp)
-
-### Group Page
-
-![Group page](Presentation/assets/screenshots/group.webp)
-
-Additional screenshots are available in the `Presentation/assets/screenshots/` directory.
-
-## Design and Presentation
+## UI Design
 
 The original user interface was designed in Figma and adapted during implementation as the application features developed.
 
-### Original UI Design
 
-![Original Figma UI design](Presentation/assets/screenshots/figma-design.webp)
+![Original Figma UI design](docs/assets/UI_Design.png)
 
-The project presentation is located in the `Presentation/` directory.
+## Presentation
 
-Start the presentation from the project root:
+The project presentation is a static website located in the `Presentation/` directory.
+
+Node.js and npm are required to run it locally. Open a terminal in the project root directory and run:
 
 ```bash
 npx --yes serve Presentation -l 8080
 ```
 
-Open [http://localhost:8080](http://localhost:8080).
+Keep the terminal running and open the following address in a web browser:
 
-Stop the presentation server with `Ctrl+C`.
+[http://localhost:8080](http://localhost:8080)
 
-Additional instructions are available in [Presentation/README.md](Presentation/README.md).
+Navigate through the presentation using its on-screen controls or keyboard controls.
+
+To stop the presentation server, return to the terminal and press `Ctrl+C`.
+
+Additional information is available in [Presentation/README.md](Presentation/README.md).
 
 ## Technology Stack
 
@@ -104,12 +87,6 @@ Additional instructions are available in [Presentation/README.md](Presentation/R
 
 ## Architecture
 
-PostgreSQL data is stored in the Docker volume `postgres_movie_data`.
-Local rebuilds keep that volume unless you remove it deliberately. The GitHub
-Actions deployment resets this volume on every deployment, so all server-side
-database data is intentionally deleted and recreated from `schema.sql` and
-`seed.sql`.
-
 The frontend communicates with the backend through `/api` routes. TMDB requests are handled by the backend, so the TMDB API token is not exposed to the browser.
 
 The backend follows a routes, services and models structure:
@@ -122,16 +99,7 @@ The backend follows a routes, services and models structure:
 
 The application data is stored in PostgreSQL. The database model connects users with favorites, reviews, groups, group memberships and media shared with groups.
 
-![Database ER diagram](Presentation/assets/screenshots/er-diagram.png)
-
-The main database entities are:
-
-- users
-- favorites
-- reviews
-- groups
-- group memberships
-- group media
+![Database ER diagram](docs/assets/er-diagram.png)
 
 ## Project Structure
 
@@ -167,10 +135,6 @@ Access tokens are used to authenticate protected requests. Refresh tokens are st
 
 Passwords are hashed with bcrypt before they are stored in the database.
 
-The deployment removes and rebuilds the backend, frontend, and `movie-db`
-containers. It also removes `postgres_movie_data`, so the database is rebuilt
-from `schema.sql` and `seed.sql` on every deployment.
-
 ## Testing
 
 The backend test suite uses Jest and Supertest.
@@ -187,12 +151,6 @@ Automated tests cover areas including:
 - request validation
 
 Important application flows have also been verified manually through the user interface.
-
-## Design and Presentation
-
-The original user interface was designed in Figma and adapted during implementation as the application features developed.
-
-The project presentation and additional screenshots are located in the `Presentation/` directory.
 
 ## Project Team
 
